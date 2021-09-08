@@ -1,1 +1,1 @@
-# MATH421.github.io
+# MATH 421: Statistical Analysis with R
