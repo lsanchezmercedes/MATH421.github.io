@@ -1,0 +1,166 @@
+---
+title: "Assignment 3"
+author: "Luis Sanchez Mercedes"
+date: "9/15/2021"
+output: html_document
+---
+
+
+Problems
+-------
+ \
+
+1. Create the following data frame
+
+| Rank 	| Age 	| Name  	|
+|------	|-----	|-------	|
+| 0    	| 28  	| Tom   	|
+| 1    	| 34  	| Jack  	|
+| 2    	| 29  	| Steve 	|
+| 3    	| 42  	| Ricky 	|
+
+```{r}
+df <- data.frame(Rank = c(0, 1, 2, 3),
+                 Age  = c(28, 34, 29, 42),
+                 Name = c('Tom', 'Jack', 'Steve', 'Ricky'))
+df
+```
+
+2. Use `read.csv` to import the Covid19 Vaccination data from WHO: [link](https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv)
+
+Show the names of the variables in the data
+```{r}
+df_covid <- read.csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv')
+names(df_covid)
+
+```
+
+
+3. How many columns and rows the data have? 
+```{r}
+str(df_covid)
+```
+print('')
+
+4. How many missing values are there?  Show the missing values by columns.  What variable has the most number of missing values?
+```{r}
+# Display the total amount of missing
+sum(is.na(df_covid))
+
+```
+
+```{r}
+# Display the toal amount of missing by column (Note: all columns have zero missing)
+colSums(is.na(df_covid))
+```
+
+
+5. What is the class of the `date` column. Change the `date` columns to `date` type using the `as.Date` function. Show the new class of the `date` column.
+```{r}
+# Display the type of the date variable (Note: it is a string)
+class(df_covid$date)
+```
+```{r}
+# Convert the type of the date variable from string into date and display type again
+df_covid$date = as.Date(df_covid$date)
+class(df_covid$date)
+```
+6. Capitalize the names of all the variables
+```{r}
+names(df_covid)[1] <- "Date"
+names(df_covid)[2] <- "State"
+names(df_covid)[3] <- "Fips"
+names(df_covid)[4] <- "Cases"
+names(df_covid)[5] <- "Deaths"
+
+# Display after modification at hand
+str(df_covid)
+```
+
+7. Find the average number of cases per day. Find the maximum cases a day.  
+```{r}
+# Find the mean number of cases
+mean(df_covid$Cases, na.rm = TRUE)
+```
+```{r}
+# Find the maximum number of cases
+max(df_covid$Cases, na.rm = TRUE)
+```
+
+8. How many states are there in the data?  
+```{r}
+# Display a table with all the states included (Note: 50 States + 5 protected territories )
+table(df_covid$State)
+```
+
+
+9. Create a new variable `weekdays` to store the weekday for each rows. 
+```{r}
+df_covid$weekdays <- weekdays(df_covid$Date)
+table(df_covid$weekdays)
+```
+
+
+
+10. Create the categorical variable `death2` variable taking the values as follows
+
+- `has_death` if there is a death that day
+-  `no_death` if there is no death that day
+```{r}
+df_covid$death2 <- ifelse(df_covid$Deaths==0, 'no_death', 'has_death')
+```
+
+
+Find the frequency and relative frequency of `no_death` and `has_death`. 
+```{r}
+table(df_covid$death2)
+```
+
+```{r}
+prop.table(table(df_covid$death2))
+```
+
+
+11. Find the first quartile (Q1), second quartile (Q2) and and third quartile (Q3) of the variable `death`. (Hint:  Use the `summary` function)
+```{r}
+# Q1 is 363, Q2 (the median) is 2079, Q3 is 7371
+summary(df_covid$Deaths)
+
+```
+
+
+12. Create the categorical variable `death3` variable taking the values as follows
+
+- `low_death` if the number of deaths smaller than the 25 percentile (Q1)
+
+- `mid_death` if the number of deaths from Q1 to Q3
+
+- `high_death` if the number of deaths greater than Q3
+```{r}
+df_covid$death3 <- cut(df_covid$Deaths,  
+                       breaks=c(-Inf, 363, 7371, Inf), 
+                       labels=c('low_death', 'mid_death', 'high_death'))
+table(df_covid$death3)
+```
+
+13. Find the average cases in Rhode Island in 2021
+```{r}
+df_covid_ri21 <- df_covid[(df_covid$State=='Rhode Island')&(df_covid$Date>='2021-01-01'),]
+summary(df_covid_ri21$Deaths)[4]
+```
+
+14. Find the median cases by weekdays in Rhode Island in 2021 
+```{r}
+by(df_covid_ri21$Deaths, df_covid_ri21$weekdays, median)
+```
+
+15. Compare the median cases in Rhode Island in June, July, August and September. 
+```{r}
+# Note: Most median cases in September
+df_covid_ri21$month <- months(df_covid_ri21$Date)
+df_covid_ri21 <- df_covid_ri21[(df_covid_ri21$Date>='2021-06-01'),]
+by(df_covid_ri21$Deaths, df_covid_ri21$month, median)
+
+```
+
+
