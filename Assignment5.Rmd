@@ -1,0 +1,155 @@
+---
+title: "Assignment 5"
+author: "Luis Sanchez Mercedes"
+date: "9/27/2021"
+output: html_document
+---
+
+-------
+```{r}
+# DATA-001: Import modules which will be utilized
+library(tidyverse)
+```
+
+**Questions**
+
+
+1. Use read_csv to import the [titanic data](titanic.csv). 
+
+```{r}
+# DATA-002: Extract titanic data from github class site
+df_titanic <- read_csv('https://bryantstats.github.io/math421/titanic.csv', show_col_types = FALSE)
+```
+
+-------
+
+2. How many missing values in total?  Which columns has the most number if missing values?
+```{r}
+# DATA-003: Illustrate the total count of missing values in the dataframe
+sum(is.na(df_titanic))
+```
+```{r}
+# DATA-004: Illustrate the total count of missing values by the columns [Cabin] has the most]
+colSums(is.na(df_titanic))
+```
+
+
+
+-------
+
+3. Remove the column with the most number of missing value
+```{r}
+# DATA-005: Remove Cabin field due to its high concentration of missing
+df_titanic$Cabin <- NULL
+
+```
+
+-------
+
+4.  Create a dataset where the rows with missing data are removed. The original dataset remains unchanged by this action.
+```{r}
+# DATA-007: Remove empty from Age and Embark (contain missing)
+drop_na(df_titanic, Age, Embarked)
+```
+
+-------
+
+5.  Replace the missing values of numeric variables with the corresponding average of the columns.
+```{r}
+# DATA-008: Calculate the mean age and replace missing values of Age with the mean
+average_age <- mean(df_titanic$Age, na.rm = TRUE)
+df_titanic$Age <- replace_na(df_titanic$Age, average_age)
+sum(is.na(df_titanic$Age))
+
+```
+
+-------
+
+6.  Replace the missing values of categorical variables with the corresponding mode (most frequent value) of the columns. Hint:  You can use the `table` function to see what is the mode of the variable. 
+
+```{r}
+table(df_titanic$Embarked)
+```
+
+```{r}
+df_titanic$Embarked <- replace_na(df_titanic$Embarked, 'C')
+sum(is.na(df_titanic$Embarked))
+```
+```{r}
+table(df_titanic$Embarked)
+```
+
+
+-------
+
+7.  The `Survived` column records whether a passenger is survived or not. `Survived = 1` means the passenger survived. Thus, the chance of survived for a random passenger can be estimated by
+
+```{r, eval=FALSE}
+mean(df_titanic$Survived)
+```
+
+Compare the chance of survived between male and female.  *Hint (Use group_by + summarise combo)*
+```{r}
+df_titanic %>% 
+  group_by(Sex) %>% 
+  summarize(Survived_proportion = mean(Survived))
+```
+
+-------
+
+8.  Use the `summary` function to find the first quartile (Q1) and the thrid quartile(Q3) of variable `Age`. Create a new variable taking values of `young` (Age < Q1), `middle` (Age from Q1 to Q3), and `old`(Age > Q3). Compare the chance of survived between these three groups of age. 
+```{r}
+q1 <- summary(df_titanic$Age)[2]
+q3 <- summary(df_titanic$Age)[5]
+
+df_titanic$Age2 <- case_when(
+  df_titanic$Age <= q1 ~ 'young',
+  df_titanic$Age <= q3 ~ 'middle',
+  TRUE ~ 'old'
+)
+
+df_titanic %>% 
+  group_by(Age2) %>% 
+  summarize(Survived_proportion = mean(Survived))
+
+```
+
+
+-------
+
+9.  This dataset ([link](data/Vehicle.CSV)) records the vehicles in car accident in 2019. The variable information can be found at [this link.](data/Fatality Analysis Reporting System (FARS) Analytical User’s Manual, 1975-2019.pdf) Import the data using `read_csv`. Let `d` be the data containing only accidents happened in Rhode Island.  Is there any missing values in `d`? 
+```{r}
+
+df_cars <- read_csv('https://bryantstats.github.io/math421/data/Vehicle.CSV', show_col_types = FALSE)
+
+df_cars
+
+```
+```{r}
+df_cars_ri <- df_cars %>% 
+                filter(STATENAME=='Rhode Island')
+
+# There is no missing in the data
+sum(is.na(df_cars_ri))
+
+```
+
+
+-------
+
+10. Continue with the dataset `d` in Question 9. We will analyze the traveling speed variable (`TRAV_SP`). This variable records the travel speeds (miles per hours) when the accident happened. Use the `table` function to check all the values of this variable.  Do you observe any unexpected values?  These unexpected values are actually the codes for missing values.  Use the `na_if` function to changes the unexpected values to `NA`.  Then replace the NAs by the average speed. 
+```{r}
+# The values of 998 and 999 are unexpected
+table(df_cars_ri$TRAV_SP)
+```
+```{r}
+df_cars_ri$TRAV_SP <- na_if(df_cars_ri$TRAV_SP, 998)
+df_cars_ri$TRAV_SP <- na_if(df_cars_ri$TRAV_SP, 999)
+
+avg_speed <- mean(df_cars_ri$TRAV_SP)
+df_cars_ri$TRAV_SP <- replace_na(df_cars_ri$TRAV_SP, avg_speed)
+
+table(df_cars_ri$TRAV_SP)
+```
+
+
