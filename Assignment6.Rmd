@@ -1,0 +1,222 @@
+---
+title: "Assignment6"
+author: "Luis Sanchez Mercedes"
+date: "10/6/2021"
+output: html_document
+---
+### Questions on Your Selected Data
+
+Choose a dataset and produce the following types of plots and comment on each plot. Plots should be meaningful. If you use the data we used in class, make sure the plots are not the same as the ones in the slides. 
+
+```{r}
+library(tidyverse)
+
+# Link: https://www.kaggle.com/umutalpaydn/nba-20202021-season-player-stats
+setwd("C:/Users/student/Downloads")
+df_basketball <- read_csv('nba2021_advanced.csv', show_col_types = FALSE)
+df_basketball
+```
+
+
+-------
+
+1. For one continuous variable:
+
+- Density
+```{r}
+df_basketball %>% 
+  filter(Pos=='PG'|Pos=='C') %>% 
+  ggplot() + geom_density(mapping=aes(x=MP))
+```
+- Histogram 
+```{r}
+df_basketball %>% 
+  ggplot() + geom_histogram(mapping = aes(x=Age))
+```
+
+
+- Boxplot
+```{r}
+df_basketball %>% 
+  ggplot() + geom_boxplot(mapping = aes(x=Age))
+```
+
+
+-------
+
+2. For one categorical variable
+
+- Barplot
+```{r}
+df_basketball %>% 
+  ggplot() + geom_bar(mapping=aes(x=Pos))
+```
+
+
+-------
+
+3. For one two continuous variables
+
+- Scatter Plot
+```{r}
+df_basketball %>% 
+  ggplot() + geom_point(mapping=aes(x=Age, y=MP))
+```
+
+
+- Line Plot
+```{r}
+df_basketball %>% 
+  ggplot() + geom_line(mapping=aes(x=PER, y=MP))
+```
+
+
+- Smooth Plot
+```{r}
+df_basketball %>% 
+  ggplot() + geom_smooth(mapping=aes(x=PER, y=G))
+```
+
+
+-------
+
+4. For one continuous + one categorical variables
+
+- Density
+```{r}
+df_basketball %>% 
+  ggplot() + geom_density(mapping=aes(x=PER, color=Tm))
+```
+
+
+- BoxPlot
+```{r}
+df_basketball %>% 
+  ggplot() + geom_boxplot(mapping=aes(x=PER, color=Tm))
+```
+
+
+-------
+
+5. For two categorical variables: barplot
+```{r}
+df_basketball %>%
+  filter(Tm=='ATL'|Tm=='OKC'|Tm=='ORL') %>% 
+  ggplot() + geom_bar(mapping=aes(x=Tm, fill=Pos))
+```
+
+
+-------
+
+### Questions on Covid Vaccination Data
+
+In this section of questions, we will use  the covid vaccination data for the US. The data and data dictionary can be found at the below link:
+
+- [Data](https://raw.githubusercontent.com/govex/COVID-19/master/data_tables/vaccine_data/us_data/time_series/vaccine_data_us_timeline.csv)
+
+- [Data Dictionary](https://github.com/govex/COVID-19/blob/master/data_tables/vaccine_data/us_data/data_dictionary.csv)
+
+
+```{r}
+df_vaccine <- read_csv('https://raw.githubusercontent.com/govex/COVID-19/master/data_tables/vaccine_data/us_data/time_series/vaccine_data_us_timeline.csv')
+df_vaccine
+```
+
+1. `Geom_point` makes scatter plots, which plot two numeric (or Date) variables. A third categorical variable is often brought in for color. For example, we can compare different vaccine types in Rhode Island by
+
+```{r}
+df_vaccine %>% 
+  filter(Province_State=='Rhode Island') %>% 
+  ggplot()+geom_point(mapping = aes(x = Date, y = Doses_admin, color = Vaccine_Type))
+```
+
+Do the follows. 
+
+  - Use `geom_point` to compare the the Moderna and Pfizer vaccine administered in California  
+  - Use `geom_point` to compare the totall vaccine administered in Rhode Island and Massachusetts
+  - Change `geom_point` to `geom_line` in the above codes to have the corresponding line plots. 
+  
+```{r}
+df_vaccine %>%
+ filter(Province_State=='California') %>% 
+  filter(Vaccine_Type=='Moderna'|Vaccine_Type=='Pfizer') %>% 
+   ggplot()+geom_point(mapping = aes(x = Date, y = Doses_admin, color = Vaccine_Type))
+```
+```{r}
+df_vaccine %>%
+ filter(Province_State=='California') %>% 
+  filter(Vaccine_Type=='Moderna'|Vaccine_Type=='Pfizer') %>% 
+   ggplot()+geom_line(mapping = aes(x = Date, y = Doses_admin, color = Vaccine_Type))
+```
+
+
+
+```{r}
+df_vaccine %>%
+ filter(Province_State=='Rhode Island'|Province_State=='Massachusetts') %>% 
+  filter(Vaccine_Type=='All') %>% 
+   ggplot()+geom_point(mapping = aes(x = Date, y = Doses_admin, color = Province_State))
+```
+```{r}
+df_vaccine %>%
+ filter(Province_State=='Rhode Island'|Province_State=='Massachusetts') %>% 
+  filter(Vaccine_Type=='All') %>% 
+   ggplot()+geom_line(mapping = aes(x = Date, y = Doses_admin, color = Province_State))
+```
+
+2. Sometime we need to do some calculations on the data before plotting. For example, to compare the popularity of two vaccine `Moderna` and `Pfizer` by date, we can use. 
+
+```{r}
+# Create a dataset recording these two vaccine administered by date
+d1 <- df_vaccine %>% filter(Vaccine_Type==c('Moderna','Pfizer')) %>% group_by(Date, Vaccine_Type) %>% summarise(vac_admin=mean(Doses_admin, na.rm=TRUE))
+
+# Plot from the newly create data
+d1 %>% ggplot()+geom_point(mapping=aes(x=Date, y=vac_admin, color=Vaccine_Type))
+```
+
+Do the follows. 
+
+- Use `geom_point` to compare the popularity of all vaccines by date. 
+- Use `geom_line` to compare the popularity of all vaccines in New England by date.
+- Use `geom_line` to compare the popularity of all vaccines in New England by month. 
+- Use `geom_line` to compare states in New England in term of the total vaccine administered by date. 
+- Use `geom_line` to compare states in New England in term of the total vaccine administered by date. 
+
+```{r}
+df_vaccine %>% 
+  filter(Vaccine_Type=='All') %>% 
+  group_by(Date) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_point(mapping=aes(x=Date, y=vac_admin))
+```
+```{r}
+new_england <- c('Maine', 'Vermont', 'New Hampshire', 'Massachusetts', 'Connecticut', ' Rhode Island')
+
+df_vaccine %>% 
+  filter(Vaccine_Type=='All') %>% 
+  filter(Province_State==new_england) %>% 
+  group_by(Date) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_line(mapping=aes(x=Date, y=vac_admin))
+```
+```{r}
+
+df_vaccine$Month <- month(df_vaccine$Date)
+
+
+df_vaccine %>% 
+  filter(Vaccine_Type=='All') %>% 
+  filter(Province_State==new_england) %>% 
+  group_by(Month) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_line(mapping=aes(x=Month, y=vac_admin))
+```
+```{r}
+df_vaccine %>% 
+  filter(Vaccine_Type=='All') %>% 
+  filter(Province_State==new_england) %>% 
+  group_by(Date, Province_State) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_line(mapping=aes(x=Date, y=vac_admin, color=Province_State))
+```
+
