@@ -1,0 +1,256 @@
+---
+title: "Assignment 7"
+author: "Luis Sanchez Mercedes"
+date: "10/13/2021"
+output: html_document
+---
+
+-------
+
+### I. Questions on Your Selected Data
+
+Use the data of your own.  Produce the following types of plots and comment on each plot. Plots should be meaningful. If you use the data we used in class, make sure the plots are not the same as the ones in the slides. All plots should have title, caption, appropriate labels on x and y-axis. 
+```{r}
+library(tidyverse)
+library(lubridate)
+
+# Link: https://www.kaggle.com/umutalpaydn/nba-20202021-season-player-stats
+setwd("C:/Users/student/Downloads")
+df_basketball <- read_csv('nba2021_advanced.csv', show_col_types = FALSE)
+df_basketball
+```
+
+
+-------
+
+1. Make a plot using `face_wrap` by one categorical variable (`face_wrap(~variable1)`)
+```{r}
+df_basketball %>% 
+  filter(Pos==c('C','PF', 'SF')) %>% 
+   ggplot(mapping = aes(x=Age, y=PER)) +
+    geom_point() +
+    geom_smooth() +
+    facet_wrap(~Pos)
+```
+
+
+2. Make a plot using `face_wrap` by two categorical variables (`face_wrap(variable1~variable2)`)
+```{r}
+df_basketball %>% 
+  filter(Tm==c('HOU', 'WAS')) %>%
+  filter(Pos==c('C','PF', 'SF')) %>%
+   ggplot(mapping = aes(x=PER, y=MP, color=Tm)) +
+    geom_point() +
+    geom_smooth() +
+    facet_wrap(Tm~Pos)
+```
+
+
+3. Make a plot using `position ='jitter'`. 
+```{r}
+df_basketball %>% 
+  ggplot() + geom_point(mapping=aes(x=Age, y=MP), position='jitter')
+```
+
+4. Make a plot using `position ='dodge'`.
+```{r}
+df_basketball %>%
+  filter(Tm=='ATL'|Tm=='OKC'|Tm=='ORL') %>% 
+  ggplot() + geom_bar(mapping=aes(x=Tm, fill=Pos), position='dodge')
+```
+
+5. Make a plot using `position ='fill'`. 
+```{r}
+df_basketball %>%
+  filter(Tm=='ATL'|Tm=='OKC'|Tm=='ORL') %>% 
+  ggplot() + geom_bar(mapping=aes(x=Tm, fill=Pos), position='fill')
+
+```
+
+6. Make a plot using `geom_col`.
+```{r}
+df_basketball %>% 
+  group_by(Pos) %>% 
+  summarise(mean_PER=mean(PER), na.rm=TRUE) %>% 
+  ggplot() + geom_col(mapping=aes(x=Pos, y=mean_PER))
+```
+
+7. Change the theme of one of your plots. 
+```{r}
+df_basketball %>% 
+  group_by(Pos) %>% 
+  summarise(mean_PER=mean(PER), na.rm=TRUE) %>% 
+  ggplot() + geom_col(mapping=aes(x=Pos, y=mean_PER))+
+  theme_linedraw()
+```
+
+
+8. Save a plot and put a link of the plot to your Github Webpage.  To link a plot `abc.png` you just need to insert the following on the README.md
+```{r}
+image <- df_basketball %>% 
+  group_by(Pos) %>% 
+  summarise(mean_PER=mean(PER), na.rm=TRUE) %>% 
+  ggplot() + geom_col(mapping=aes(x=Pos, y=mean_PER))+
+  theme_linedraw()
+
+ggsave(filename = 'abc.png', plot=image)
+```
+
+
+```{r, eval=FALSE}
+[Link to the plot](abc.png)
+```
+
+
+### II. Questions on Covid Vaccination Data
+
+In this section of questions, we will use  the covid vaccination data for the US. The data and data dictionary can be found at the below link:
+
+- [Data](https://raw.githubusercontent.com/govex/COVID-19/master/data_tables/vaccine_data/us_data/time_series/vaccine_data_us_timeline.csv)
+
+- [Data Dictionary](https://github.com/govex/COVID-19/blob/master/data_tables/vaccine_data/us_data/data_dictionary.csv)
+
+
+```{r}
+df_vaccine <- read_csv('https://raw.githubusercontent.com/govex/COVID-19/master/data_tables/vaccine_data/us_data/time_series/vaccine_data_us_timeline.csv')
+df_vaccine
+```
+
+1. Put titles, captions, appropriate labels on x and y-axis for the last two questions in Assignments 6.
+```{r}
+new_england <- c('Maine', 'Vermont', 'New Hampshire', 'Massachusetts', 'Connecticut', ' Rhode Island')
+
+df_vaccine$Month <- month(df_vaccine$Date)
+
+df_vaccine %>% 
+  filter(Vaccine_Type=='All') %>% 
+  filter(Province_State==new_england) %>% 
+  group_by(Month) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_line(mapping=aes(x=Month, y=vac_admin))+
+  labs(x='Month of Vaccine', 
+         y='Total Vaccinations',
+         title='Line Plot on Total Vaccination in New England States',
+         caption='October had the most vacination within New England')
+
+```
+
+```{r}
+df_vaccine %>% 
+  filter(Vaccine_Type=='All') %>% 
+  filter(Province_State==new_england) %>% 
+  group_by(Date, Province_State) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_line(mapping=aes(x=Date, y=vac_admin, color=Province_State))+
+    labs(x='Month of Vaccine', 
+         y='Total Vaccinations',
+         color='New England States',
+         title='Line Plot on Total Vaccination by New England States',
+         caption='Massachusetts has the highest total vaccination within New England')
+```
+
+
+
+2. Since the data seems lack of categorical variables, we will create a few categorical variables for easier visualization. From the `Date` variable create three categorical variables to record weekdays, months and quarters. You could also create a categorical variable to record the state regions (South, North East, Midwest, West) or other new categorical variables.
+```{r}
+northeast = c('Connecticut', 'Maine', 'Massachusetts', 'New Hampshire', 'Rhode Island', 'Vermont', 'New Jersey', 'New York', 'Pennsylvania')
+midwest   = c('Illinois', 'Indiana', 'Michigan', 'Ohio', 'Wisconsin', 'Iowa', 'Kansas', 'Minnesota', 'Missouri', 'Nebraska', 'North Dakota', 'South Dakota')
+west      = c('Arizona', 'Colorado', 'Idaho', 'Montana', 'Nevada', 'New Mexico', 'Utah', 'Wyoming', 'Alaska', 'California', 'Hawaii', 'Oregon', 'Washington')
+
+df_vaccine$US_Region <- 'South'
+df_vaccine$US_Region[df_vaccine$Province_State %in% northeast] <- 'Northeast'
+df_vaccine$US_Region[df_vaccine$Province_State %in% midwest]   <- 'Midwest'
+df_vaccine$US_Region[df_vaccine$Province_State %in% west]      <- 'West'
+
+table(df_vaccine$US_Region)
+
+```
+
+
+3. With the updated data after question 2.  Create at least 7 new meaningful graphs.  Your graphs should have titles, captions, appropriate labels on x and y-axis. You should also make use of the follows. 
+
+ - geom_point
+```{r}
+df_vaccine %>% 
+  filter(Vaccine_Type!='All') %>%
+  filter(US_Region=='Midwest') %>% 
+  group_by(Date, US_Region, Vaccine_Type) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_point(mapping=aes(x=Date, y=vac_admin, color=Vaccine_Type))+
+  labs(x='Date of  Vaccine', 
+         y='Total Vaccinations',
+         color='Vaccine',
+         title='Line Plot on Total Vaccination by Vaccine Type for Midwest State',
+         caption='West had a large portion of Pfizer vaccines')
+```
+ 
+ - geom_line
+```{r}
+df_vaccine %>% 
+  filter(Vaccine_Type=='All') %>% 
+  group_by(Date, US_Region) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_line(mapping=aes(x=Date, y=vac_admin, color=US_Region))+
+  labs(x='Month of Vaccine', 
+         y='Total Vaccinations',
+         color='U.S Region',
+         title='Line Plot on Total Vaccination by New U.S Region',
+         caption='The Northeast had the most cases')
+```
+ - geom_smooth
+ _ geom_bar
+```{r}
+df_vaccine %>% 
+  filter(Vaccine_Type==c('Moderna', 'Pfizer')) %>% 
+  group_by(US_Region, Vaccine_Type) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_bar(mapping=aes(x=US_Region, fill=Vaccine_Type), position='fill')+
+  labs(x='U.S Region', 
+         y='Counts',
+         fill='Vaccine Type',
+         title='Bar Plot on U.S Region for Pfizer and Moderna',
+         caption='Count is similar accross region')
+```
+ 
+ - geom_col
+```{r}
+df_vaccine %>% 
+  filter(Vaccine_Type==c('Moderna', 'Pfizer')) %>% 
+  group_by(US_Region, Vaccine_Type) %>% 
+  summarise(vac_admin=mean(Doses_admin, na.rm=TRUE)) %>% 
+  ggplot()+geom_col(mapping=aes(x=US_Region, y=vac_admin,fill=Vaccine_Type))+
+  labs(x='U.S Region', 
+         y='Total Vaccinations',
+         fill='Vaccine Type',
+         title='Bar Plot on Total Vaccination by New U.S Region for Pfizer and Moderna',
+         caption='West has higher average vaccination admitted and largest among both group')
+```
+ 
+ - face_wrap
+```{r}
+
+df_vaccine %>% 
+  ggplot(mapping = aes(x=Doses_admin, y=Doses_alloc)) +
+  geom_point()+
+  geom_smooth()+
+  facet_wrap(~US_Region) +
+  labs(x='Total Vacinations Administered', 
+         y='Total Vaccination Allocated',
+         title='Scatter Plot on Total Vaccination Administered vs. Allocated by U.S Region',
+         caption='South has more density within it')
+
+```
+ 
+ - combination of geom_point and geom_smooth 
+```{r}
+df_vaccine %>% 
+  ggplot(mapping = aes(x=Doses_admin, y=Doses_alloc)) +
+  geom_point()+
+  geom_smooth()+
+  labs(x='Total Vacinations Administered', 
+         y='Total Vaccination Allocated',
+         title='Scatter Plot on Total Vaccination Administered vs. Allocated by U.S Region',
+         caption='Illustrate the increase of available vaccinations and the administrations of these vaccines')
+
+```
+ 
