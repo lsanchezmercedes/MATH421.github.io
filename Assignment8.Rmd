@@ -1,0 +1,104 @@
+---
+title: "Assignment 8"
+author: "Luis Sanchez Mercedes"
+date: "10/20/2021"
+output: html_document
+---
+
+1. Install two packages `gganimate` and `gifski` then restart Rstudio. Use the WHO's dataset at [this link](https://covid19.who.int/WHO-COVID-19-global-data.csv). Make a top-10 bar race by months between countries on the number of deaths by Covid 19.  
+```{r}
+
+library(lubridate)
+library(tidyverse)
+library(gganimate)
+library(gifski)
+library(ggplot2)
+
+df_covid <- read_csv('https://covid19.who.int/WHO-COVID-19-global-data.csv')
+df_covid
+
+```
+```{r}
+df_covid$month <- month(df_covid$Date_reported)
+
+d1 <- df_covid %>% group_by(month, Country_code) %>% summarise(sum = sum(New_deaths))
+d1 <- d1 %>% group_by(month) %>% mutate(rank=rank(-sum)) %>% ungroup()
+d1 <- d1 %>% filter(rank <= 10)
+d1
+```
+```{r}
+animation <- d1 %>% ggplot(aes(x=rank, y=sum, group=Country_code, fill=Country_code, label=Country_code)) +
+                      geom_bar(stat='identity') +
+                      geom_text(aes(y = sum, label = Country_code), hjust = 1.4) +
+                      coord_flip(clip = "off", expand = FALSE)  +
+                      scale_x_reverse() +
+                      labs(title = 'Month {closest_state}', x='', y='Total Number of Death', fill='Country Code') +
+                      theme(plot.title = element_text(hjust = 1, size = 24),
+                              axis.ticks.y = element_blank(),
+                              axis.text.y  = element_blank()) +
+                     transition_states(month) +
+                     ease_aes("cubic-in-out")
+
+animate(animation, nframes = 100)
+```
+
+```{r}
+table(df_covid$WHO_region)
+```
+
+
+2. Make another bar race using that dataset.  
+```{r}
+d2 <- df_covid %>% group_by(month, WHO_region) %>% summarise(sum = sum(New_cases))
+d2 <- d2 %>% group_by(month) %>% mutate(rank=rank(-sum)) %>% ungroup()
+d2 <- d2 %>% filter(rank <= 10)
+d2
+
+```
+```{r}
+animation <- d2 %>% ggplot(aes(x=rank, y=sum, group=WHO_region, fill=WHO_region, label=WHO_region)) +
+                      geom_bar(stat='identity') +
+                      geom_text(aes(y = sum, label = WHO_region), hjust = 1.4) +
+                      coord_flip(clip = "off", expand = FALSE)  +
+                      scale_x_reverse() +
+                      labs(title = 'Month {closest_state}', x='', y='Total Number of Death', fill='WHO Region') +
+                      theme(plot.title = element_text(hjust = 1, size = 24),
+                              axis.ticks.y = element_blank(),
+                              axis.text.y  = element_blank()) +
+                     transition_states(month) +
+                     ease_aes("cubic-in-out")
+
+animate(animation, nframes = 100)
+```
+
+
+3. Make a bar race using a dataset of your own interest. You may use the dataset that we use in class (https://covidtracking.com/data/download/all-states-history.csv) but you should make a different bar racev from ones in the slides. 
+```{r}
+df_basketball <- read_csv('C:/Users/student/Downloads/nba2021_advanced.csv', show_col_types = FALSE)
+df_basketball
+```
+```{r}
+table(df_basketball$Tm)
+```
+```{r}
+d3 <- df_basketball %>% group_by(Tm, Pos) %>% summarise(mean = mean(PER))
+d3 <- d3 %>% group_by(Tm) %>% mutate(rank=rank(-mean)) %>% ungroup()
+d3 <- d3 %>% filter(rank <= 10)
+d3
+```
+```{r}
+animation <- d3 %>% ggplot(aes(x=rank, y=mean, group=Pos, fill=Pos, label=Pos)) +
+                      geom_bar(stat='identity') +
+                      geom_text(aes(y = mean, label = Pos), hjust = 1.4) +
+                      coord_flip(clip = "off", expand = FALSE)  +
+                      scale_x_reverse() +
+                      labs(title = '{closest_state}', x='', y='Player Efficiency Rate', fill='Position') +
+                      theme(plot.title = element_text(hjust = 1, size = 24),
+                              axis.ticks.y = element_blank(),
+                              axis.text.y  = element_blank()) +
+                     transition_states(Tm) +
+                     ease_aes("cubic-in-out")
+
+animate(animation, nframes = 100)
+```
+

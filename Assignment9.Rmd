@@ -1,0 +1,129 @@
+---
+title: "Assignment 9"
+author: "Luis Sanchez Mercedes"
+date: "10/20/2021"
+output: html_document
+---
+
+1. Use the dataset by of covid 19 by WHO at https://covid19.who.int/WHO-COVID-19-global-data.csv. Find the three countries with the most numbers of deaths by Covid-19. 
+
+
+```{r}
+library(gganimate)
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+
+df_covid <- read_csv('https://covid19.who.int/WHO-COVID-19-global-data.csv')
+df_covid
+```
+
+
+2. Make a plot revealing the number of deaths in the three countries with the most numbers of deaths
+```{r}
+
+top_country <- df_covid %>% 
+                filter(Date_reported==Sys.Date()) %>% 
+                  group_by(Country) %>% 
+                    summarise(sum = sum(Cumulative_deaths)) %>% 
+                     mutate(rank=rank(-sum)) %>% 
+                     filter(rank<=3) %>% 
+                pull(Country)
+
+df_covid %>% 
+  filter(Country %in% top_country) %>% 
+    ggplot(aes(y=Cumulative_deaths, x=Date_reported, color=Country))+
+    geom_line()+
+    transition_reveal(Date_reported)
+  
+```
+
+
+3. Create the new variable (column) `death_per_cases` recording the number of deaths per cases (Hint: divide cumulative deaths by cumulative cases).  What are the three countries with the highest deaths per cases? 
+```{r}
+df_covid$death_per_cases <- df_covid$Cumulative_deaths/df_covid$Cumulative_cases
+
+
+top_country_dpc <- df_covid %>% 
+                     group_by(Country) %>% 
+                       summarise(mean = mean(death_per_cases)) %>% 
+                        mutate(rank=rank(-mean)) %>% 
+                        filter(rank<=3) %>% 
+                     pull(Country)
+
+top_country_dpc
+```
+
+
+4. Make a plot revealing the number of deaths per cases of the US, Italy and Mexico. 
+```{r}
+df_covid %>% 
+  filter(Country %in% c('United States of America', 'Italy', 'Mexico')) %>% 
+    ggplot(aes(y=death_per_cases, x=Date_reported, color=Country))+
+    geom_line()+
+    transition_reveal(Date_reported)
+
+```
+
+
+5. Use `transition_reveal` to create three animated graph with the vaccination data at 
+
+https://raw.githubusercontent.com/govex/COVID-19/master/data_tables/vaccine_data/us_data/time_series/vaccine_data_us_timeline.csv
+```{r}
+df_vaccine<- read_csv('https://raw.githubusercontent.com/govex/COVID-19/master/data_tables/vaccine_data/us_data/time_series/vaccine_data_us_timeline.csv')
+df_vaccine
+
+```
+```{r}
+df_vaccine$month <-  month(df_vaccine$Date)
+
+
+df_vaccine %>% 
+  filter(Vaccine_Type %in% c('Moderna', 'Pfizer')) %>%
+   group_by(month, Vaccine_Type) %>% 
+    summarize(sum=sum(Doses_admin, na.rm =TRUE)) %>% 
+      ggplot(aes(y=sum, x=month, color=Vaccine_Type))+
+        geom_line()+
+        transition_reveal(month)
+
+```
+
+
+```{r}
+new_england <- c('Maine', 'Vermont', 'New Hampshire', 'Massachusetts', 'Connecticut', ' Rhode Island')
+
+
+df_vaccine %>% 
+  filter(month>5, month<10) %>% 
+  filter(Province_State %in% new_england) %>%
+   group_by(month, Province_State) %>% 
+    summarize(sum=sum(Doses_admin)) %>% 
+      ggplot(aes(y=sum, x=month, color=Province_State))+
+        geom_line()+
+        transition_reveal(month)
+```
+
+```{r}
+northeast = c('Connecticut', 'Maine', 'Massachusetts', 'New Hampshire', 'Rhode Island', 'Vermont', 'New Jersey', 'New York', 'Pennsylvania')
+midwest   = c('Illinois', 'Indiana', 'Michigan', 'Ohio', 'Wisconsin', 'Iowa', 'Kansas', 'Minnesota', 'Missouri', 'Nebraska', 'North Dakota', 'South Dakota')
+west      = c('Arizona', 'Colorado', 'Idaho', 'Montana', 'Nevada', 'New Mexico', 'Utah', 'Wyoming', 'Alaska', 'California', 'Hawaii', 'Oregon', 'Washington')
+
+df_vaccine$US_Region <- 'South'
+df_vaccine$US_Region[df_vaccine$Province_State %in% northeast] <- 'Northeast'
+df_vaccine$US_Region[df_vaccine$Province_State %in% midwest]   <- 'Midwest'
+df_vaccine$US_Region[df_vaccine$Province_State %in% west]      <- 'West'
+
+
+table(df_vaccine$US_Region)
+```
+
+```{r}
+df_vaccine %>% 
+  filter(month>5, month<10) %>% 
+   group_by(month, US_Region) %>% 
+    summarize(sum=sum(Doses_admin)) %>% 
+      ggplot(aes(y=sum, x=month, color=US_Region))+
+        geom_line()+
+        transition_reveal(month)
+```
+
