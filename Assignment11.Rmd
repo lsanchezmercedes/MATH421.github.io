@@ -1,0 +1,76 @@
+---
+title: "Assignment 11"
+author: "Luis Sanchez Mercedes"
+date: "10/27/2021"
+output: html_document
+---
+
+
+1. Install the package `mlbench` and use the follows to import the data
+
+```{r}
+library(mlbench)
+library(caret)
+
+
+data(PimaIndiansDiabetes)
+df_diabetes <- PimaIndiansDiabetes
+```
+
+- Set seed to be 2020. 
+```{r}
+set.seed(2020)
+```
+
+- The target variable is `diabetes`
+```{r}
+df_diabetes$target <- df_diabetes$diabetes
+df_diabetes$diabetes <- NULL
+```
+
+- Partition the data into 80% training and 20% testing.  
+```{r}
+splitIndex <- createDataPartition(df_diabetes$target, p=.80, list=FALSE )
+
+df_train <- df_diabetes[splitIndex, ]
+df_test  <- df_diabetes[-splitIndex,]
+df_train
+```
+
+
+-------
+
+2. Tuning Decision Tree:  Use cross-validation with 10 k-folds to find the maxdepth with the greatest accuracy. Plot the accuracy associated with different maxdepths against the maxdepths. The range to search for maxdepth is from 1 to 10. 
+```{r}
+tuning  = expand.grid(maxdepth = 1:10)
+control = trainControl(method = "cv", number = 10)
+
+decision_tree <- train(target~., 
+                        data=df_train, 
+                          method = "rpart2", 
+                           trControl = control,
+                           tuneGrid = tuning)
+```
+
+
+```{r}
+plot(decision_tree)
+```
+
+-------
+
+3. Make the final decision to select the maxdepth for your decision tree.  Is your selected maxdepth the same as the maxdepth found in 2? 
+```{r}
+decision_tree2 <- train(target~., data=df_train, method = "rpart2", maxdepth=1)
+```
+
+
+-------
+
+4. Calculate the accuracy of your decision tree (the decision tree with your selected maxdepth in 3) on the test data. 
+```{r}
+pred <- predict(decision_tree2, df_test)
+cm <- confusionMatrix(data = pred, reference = df_test$target, positive = "neg")
+cm$overall[1]
+```
+
