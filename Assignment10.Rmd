@@ -1,0 +1,173 @@
+---
+title: "Assignment10"
+author: "Luis Sanchez Mercedes"
+date: "10/25/2021"
+output: html_document
+---
+
+1. Install the package `mlbench` and use the follows to import the data
+
+```{r}
+library(mlbench)
+library(caret)
+library(rpart)
+library(rattle)
+library(randomForest)
+library(ggplot2)
+library(tidyverse)
+
+
+data(PimaIndiansDiabetes)
+df_diabetes <- PimaIndiansDiabetes
+df_diabetes
+```
+
+- Set seed to be 2020. 
+- The target variable is `diabetes`
+- Partition the data into 80% training and 20% testing.  
+```{r}
+set.seed(2020)
+splitIndex <- createDataPartition(df_diabetes$diabetes, p=.80, list=FALSE )
+
+df_train <- df_diabetes[splitIndex, ]
+df_test  <- df_diabetes[-splitIndex,]
+df_train
+
+```
+
+
+-------
+
+2. Practice Decision Tree.  Do the follows:
+
+  - Use `rpart` package, create a decision tree with maximum depth of 3. 
+  
+  - Calculate the accuracy of the model on the testing data. 
+  
+  - Plot the tree
+  
+  - Plot the variable importance by the tree
+  
+```{r}
+decision_tree <- rpart(diabetes ~., data=df_train, control=rpart.control(maxdepth=3))
+prediction <- predict(decision_tree, df_test, type='class')
+confusion_matrix <- confusionMatrix(data = prediction, reference = df_test$diabetes, positive = "neg")
+confusion_matrix$overall[1] # Accuracy
+```
+```{r}
+fancyRpartPlot(decision_tree)
+```
+
+```{r}
+barplot(decision_tree$variable.importance)
+
+```
+
+-------
+
+3. Practice Random Forest.  Do the follows: 
+
+  - Use `randomForest` package, create a random forest of 1000 trees. 
+  
+  - Calculate the accuracy of the model on the testing data. 
+  
+  - Plot the variable importance by the forest
+```{r}
+random_forest <- randomForest(diabetes ~., data=df_train, ntree=1000)
+prediction <- predict(random_forest, df_test, type='class')
+confusion_matrix <- confusionMatrix(data = prediction, reference = df_test$diabetes, positive = "neg")
+confusion_matrix$overall[1] # Accuracy
+```
+```{r}
+random_forest$importance
+```
+
+
+-------
+
+4. Compare the testing accuracy of a forest of 1000 trees and a forest of 2000 trees. 
+```{r}
+random_forest_2 <- randomForest(diabetes ~., data=df_train, ntree=2000)
+prediction <- predict(random_forest_2, df_test, type='class')
+confusion_matrix <- confusionMatrix(data = prediction, reference = df_test$diabetes, positive = "neg")
+confusion_matrix$overall[1] # 2000 tree is more predictive
+```
+
+
+-------
+
+5. Using Caret, create a tree with maximum depth of 3 and forest of 1000 trees. Compare the accuracy of these two models.
+```{r}
+model1 <- train(diabetes~., data=df_train, method = "rpart2", maxdepth=3)
+pred <- predict(model1, df_test)
+cm <- confusionMatrix(data = pred, reference = df_test$diabetes, positive = "neg")
+cm$overall[1]
+```
+
+```{r}
+model2 <- train(diabetes~., data=df_train, method = "rf", ntree=1000)
+pred <- predict(model2, df_test)
+cm <- confusionMatrix(data = pred, reference = df_test$diabetes, positive = "neg")
+cm$overall[1]
+```
+
+-------
+
+6. Plot variable importance by the two models in 5. 
+```{r}
+plot(varImp(model1))
+```
+
+```{r}
+plot(varImp(model2))
+```
+
+
+-------
+
+7. (Optional - For extra credits only) Use your own selected data.  Do the follows. 
+
+- Handle missing values if any
+
+- Put the variables in the right format (categorical vs. continuous)
+
+- Select a binary target variable (Use can create a binary target variable from a continuous variable). 
+
+- Using caret with method `ranger` to train then test the accuracy of a random forest of 1000 trees.
+
+```{r}
+df_basketball <- read_csv('C:/Users/student/Downloads/nba2021_advanced.csv', show_col_types = FALSE)
+df_basketball
+```
+```{r}
+df_basketball$AllStar <- "0"
+df_basketball$AllStar[df_basketball$PER>22.5] <- "1"
+
+df_basketball$Player <- NULL
+df_basketball$Tm <- NULL
+df_basketball$PER <- NULL
+df_basketball$Pos <- NULL
+
+table(df_basketball$AllStar)
+
+```
+
+```{r}
+splitIndex <- createDataPartition(df_basketball$AllStar, p=.70, list=FALSE )
+
+df_train <- df_basketball[splitIndex, ]
+df_test  <- df_basketball[-splitIndex,]
+df_train
+```
+
+
+
+
+
+```{r}
+random_forest <- train(AllStar~., data=df_train, method = "ranger", ntree=1000)
+pred <- predict(random_forest, df_test)
+cm <- confusionMatrix(data = pred, reference = factor(df_test$AllStar), positive = "1")
+cm$overall[1]
+```
+
