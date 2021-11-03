@@ -1,0 +1,169 @@
+---
+title: "Assignment 12"
+author: "Luis Sanchez Mercedes"
+date: "10/27/2021"
+output: html_document
+---
+
+
+-------
+
+1. Install the package `mlbench` and use the follows to import the data
+
+```{r}
+library(mlbench)
+library(caret)
+library(ggplot2)
+
+
+data(PimaIndiansDiabetes)
+df_diabetes <- PimaIndiansDiabetes
+head(df_diabetes)
+```
+
+- Set seed to be 2020. 
+```{r}
+set.seed(2020)
+```
+
+- The target variable is `diabetes`
+```{r}
+df_diabetes$target <- df_diabetes$diabetes
+df_diabetes$diabetes <- NULL
+```
+
+- Partition the data into 80% training and 20% testing.  
+```{r}
+splitIndex <- createDataPartition(df_diabetes$target, p=.80, list=FALSE )
+
+df_train <- df_diabetes[splitIndex, ]
+df_test  <- df_diabetes[-splitIndex,]
+
+head(df_train)
+```
+
+-------
+
+2. Use cross-validation of 30 folds to tune random forest (method='rf').  What is the `mtry` value that produces the greatest accuracy?
+```{r}
+tuneGrid = expand.grid(mtry = 2:6)
+trControl = trainControl(method = "cv", number = 10)
+
+random_forest <- train(target~.,data = df_train, 
+                                method = "rf", 
+                                trControl = trControl,
+                                tuneGrid = tuneGrid) 
+
+```
+
+ 
+```{r}
+plot(random_forest) # The optimal value for mtry is 2
+```
+
+-------
+
+3. Use cross-validation with of 30 folds to tune random forest (method='ranger').  What are the parameters that produce the greatest accuracy?
+```{r}
+
+
+tuneGrid = expand.grid(mtry = 2:4,
+                       splitrule = c('gini', 'extratrees'),
+                       min.node.size = c(1:10))
+
+
+random_forest <- train(target~.,data = df_train, 
+                                method = "ranger", 
+                                trControl = trControl,
+                                tuneGrid = tuneGrid) 
+```
+
+```{r}
+plot(random_forest) # highest accuracy utilize extratrees comparison, 2 mtry and 8 node size
+```
+
+
+-------
+
+4. Go to https://topepo.github.io/caret/available-models.html and pick a classification model.  Tune the classification model using cross-validation of 30 folds. 
+```{r}
+tuneGrid = expand.grid(nIter = 10:50)
+trControl = trainControl(method = "cv", number = 30)
+
+boosted_logistic <- train(target~.,data = df_train, 
+                                method = "LogitBoost", 
+                                trControl = trControl,
+                                tuneGrid = tuneGrid)
+```
+
+```{r}
+plot(boosted_logistic) # 25 iterations were the best performing
+```
+
+-------
+5. Pick three models at [this link](https://topepo.github.io/caret/available-models.html) to compare using 15-fold cross validation method. Evaluate the accuracy of the final model on the test data. What is the best model?
+```{r}
+tuneGrid = expand.grid(nIter = 10:50, method='real_adaboost')
+trControl = trainControl(method = "cv", number = 15)
+
+adaboost <- train(target~.,data = df_train, 
+                           method = "adaboost", 
+                           trControl = trControl,
+                           tuneGrid = tuneGrid)
+```
+
+```{r}
+plot(adaboost)
+```
+
+
+```{r}
+tuneGrid = expand.grid(C = seq(0.001, 1, length=10))
+trControl = trainControl(method = "cv", number = 15)
+
+svm <- train(target~.,data = df_train, 
+                         method = "svmLinear", 
+                         trControl = trControl,
+                         tuneGrid = tuneGrid)
+```
+
+```{r}
+plot(svm)
+```
+
+
+```{r}
+tuneGrid = expand.grid(k = 1:5)
+trControl = trainControl(method = "cv", number = 15)
+
+knn <- train(target~.,data = df_train, 
+                      method = "knn", 
+                      trControl = trControl,
+                      tuneGrid = tuneGrid)
+```
+
+```{r}
+plot(knn)
+```
+
+
+```{r}
+pred1 <- predict(adaboost, df_test)
+cm1 <- confusionMatrix(data = pred1, reference = df_test$target, positive = "neg")
+cm1$overall[1]
+```
+
+```{r}
+pred2 <- predict(svm, df_test)
+cm2 <- confusionMatrix(data = pred2, reference = df_test$target, positive = "neg")
+cm2$overall[1]
+```
+
+
+```{r}
+pred3 <- predict(knn, df_test)
+cm3 <- confusionMatrix(data = pred3, reference = df_test$target, positive = "neg")
+cm3$overall[1]
+```
+
+ 
