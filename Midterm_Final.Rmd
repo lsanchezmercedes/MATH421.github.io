@@ -1,0 +1,592 @@
+---
+title: "Midterm Final"
+author: "Luis Sanchez Mercedes"
+date: "11/22/2021"
+output: html_document
+---
+
+# {.tabset}
+
+
+-------
+
+## I. Data Wranggling
+
+I.I Extract the Data
+```{r, warning=FALSE}
+library(haven)
+library(tidyverse)
+library(caret)
+library(rpart)
+library(ggplot2)
+library(rattle)
+library(gganimate)
+library(gifski)
+library(dplyr)
+```
+
+
+```{r}
+# df_hhs <- read_sas('C:/Users/student/Downloads/hdd0318cy.sas7bdat')
+# head(df_hhs)
+```
+
+I.II Filter the Data
+```{r}
+# df_hhs_y18 <- df_hhs %>% 
+               # filter(yod==18) %>% 
+               #  select( "yod", "payfix","pay_ub92","age",  
+               #    "sex","raceethn","provider","moa", 
+               #    "yoa","mod","admtype", "asource" , 
+               #    "preopday" ,"los", "service" , "icu","ccu",    
+               #    "dispub92", "payer"  ,"drg","trandb", 
+               #   "randbg","randbs","orr", "anes","seq",   
+               #   "lab","dtest", "ther","blood","phar", 
+               #   "other","patcon","bwght","total","tot" ,  
+               #   "ecodub92","b_wt","pt_state","diag_adm","ancilar" ,
+               #   "campus","er_fee","er_chrg","er_mode","obs_chrg",
+               #   "obs_hour","psycchrg","nicu_day")
+```
+
+I.III Save File within current directory
+```{r}
+# write_csv(df_hhs_y18, 'midterm.csv')
+
+df_hhs <- read_csv('midterm.csv')
+head(df_hhs)
+```
+
+I.IV Missing Variables
+
+ I.IV.I Fields with Missing
+```{r}
+colSums(is.na(df_hhs))
+```
+
+ I.IV.II Remove Fields
+```{r}
+df_hhs$payfix   <- NULL
+df_hhs$preopday <- NULL
+df_hhs$obs_hour <- NULL
+df_hhs$nicu_day <- NULL
+df_hhs$bwght    <- NULL
+df_hhs$ecodub92 <- NULL
+df_hhs$er_mode  <- NULL
+df_hhs$diag_adm <- NULL
+
+colSums(is.na(df_hhs))
+```
+I.V Admission & Discharge
+
+ I.V.I Fields
+```{r}
+head(df_hhs$moa) # Month of Admission
+head(df_hhs$mod) # Month of Discharge
+
+```
+ I.V.II Admission by Month (Max)
+```{r}
+# October had the most admission
+df_hhs %>% 
+  count(moa) %>% 
+    mutate(rank=rank(-n)) %>% 
+      filter(rank==1)
+```
+
+ I.V.III Admission by Month, Sex (Male)
+```{r}
+# October had the most male admission
+df_hhs %>% 
+  filter(sex==1) %>% 
+   count(moa) %>% 
+    mutate(rank=rank(-n)) %>% 
+      filter(rank==1)
+```
+
+
+ I.V.IV Admission by Month, Sex (Female)
+```{r}
+# March had the most teenage female admission
+df_hhs %>% 
+  filter(age<18, age>=12) %>% 
+   filter(sex==2) %>% 
+     count(moa) %>% 
+      mutate(rank=rank(-n)) %>% 
+       filter(rank==1)
+```
+
+ I.V.V Admission by Month, Provider, Sex
+```{r}
+# Rhode Island Hospital had the most female admission in October
+df_hhs %>% 
+  filter(moa==10) %>% 
+   filter(sex==2) %>% 
+    count(provider) %>% 
+      mutate(rank=rank(-n)) %>% 
+        filter(rank==1)
+```
+
+I.VI Age
+
+ I.VI.I Age by Sex
+```{r}
+# Male are typically older on average
+df_hhs %>%
+  filter(sex!=9) %>% 
+    group_by(sex) %>% 
+      summarize(avg = mean(age)) %>% 
+      arrange(-avg)
+```
+ I.VI.II Age by Months
+ 
+```{r}
+# January, June and December have the top 3 oldest patient
+df_hhs %>% 
+  group_by(moa) %>% 
+   summarize(avg_age = mean(age)) %>% 
+   arrange(-avg_age)
+```
+
+I.VII Charge
+
+ I.VII.I Charge by Provider
+```{r}
+# Women and Infants has the highest total charge
+df_hhs %>% 
+   group_by(provider) %>% 
+    summarise(max = max(tot)) %>% 
+      mutate(rank=rank(-max)) %>% 
+        filter(rank==1)
+  
+```
+
+ I.VII.II Charge by Provider, Sex, Age
+```{r}
+# Rhode Island Hospital have the lowest charge to a teenage 
+df_hhs %>% 
+  filter(sex==1) %>% 
+   filter(age<18, age>=12) %>% 
+    group_by(provider) %>% 
+     summarize(min = min(tot)) %>% 
+      mutate(rank=rank(min)) %>% 
+       filter(rank==1)
+```
+
+I.VII Length of Stay
+ 
+ I.VII.I Create Variable
+```{r}
+spring <- c(3,4,5)
+summer <- c(6,7,8)
+fall   <- c(9,10,11)
+
+df_hhs$season <- "Winter"
+df_hhs$season[df_hhs$moa %in% spring] <- "Spring"
+df_hhs$season[df_hhs$moa %in% summer] <- "Summer"
+df_hhs$season[df_hhs$moa %in% fall]  <- "Fall"
+
+table(df_hhs$season)
+```
+
+ I.VII.II Length of Stay by Season
+```{r}
+# Summer had the longest length of Stay with about 5 days
+df_hhs %>% 
+  group_by(season) %>% 
+   summarise(avg=mean(los)) %>% 
+    arrange(-avg)
+```
+ I.VI.III Length of Stay by Age, Sex
+```{r}
+# 20-year old male patient stayed a day for the fall season has to on average pay $16k
+df_hhs %>% 
+  filter(sex==1) %>% 
+   filter(age==20) %>% 
+    filter(season=="Fall") %>% 
+     filter(los==1) %>% 
+        summarise(avg=mean(tot))
+```
+In summary, here is a brief description of the insights extracted from this section. In terms of missing values, the variable of payfix, preorday, observation hours, number of icu days, birth weight, and ecodub92 were removed due to its high concentration of missing. In terms of month of admission, the month of October had the highest number of admissions and consequently, the most male patients admitted. The month of march had the most teenage female admitted. Rhode Island Hospital had the most female admission in October. January had the oldest patients by average with an age of 51.8. Women and Infants hold the highest charge of any provider with a 3 million charge. Rhode Island Hospital had the least total charge for a teenage boy with a value of approximately 3k. In terms of season, the length of stay was distributed by Summer 4.96, Fall  4.96, Winter  4.93, Spring  4.84. Summer had the longest. Finally on average a 20-year old male staying one day gets charged approximately 16k. Overall, pretty interesting data. The one that struck me the most was the statistics of the 20-year old male since as someone close to that age, it was surprising the average cost was that high.
+-------
+
+## II. Data Visualization
+
+II.I Illustration of Study
+
+```{r}
+# Modify race variable to include this information
+df_hhs$race <- "None"
+df_hhs$race[df_hhs$raceethn==1] <- "White"
+df_hhs$race[df_hhs$raceethn==2] <- "Black"
+df_hhs$race[df_hhs$raceethn==3] <- "Asian"
+df_hhs$race[df_hhs$raceethn==7] <- "Hispanic"
+df_hhs$race[df_hhs$raceethn %in% c(4, 5, 6, 9)] <- "Other"
+
+table(df_hhs$race)
+```
+
+
+```{r}
+# Percentage of Patients by Race,
+df_hhs %>% 
+  group_by(race) %>%
+    count() %>% ungroup %>% 
+    mutate(per = 100*n/sum(n)) %>% 
+    ggplot(mapping = aes(x=race, y=per)) +
+     geom_col() +
+     annotate("text", label='Hello World')
+```
+
+
+```{r}
+# Number of Color Patients by Provider
+df_hhs$provider <- factor(df_hhs$provider)
+of_color <- c("Black", "Asian", "Hispanic")
+
+df_hhs %>% 
+  filter(race==of_color) %>% 
+  group_by(provider, race) %>% 
+   count() %>%
+   ggplot(mapping=aes(x=race, y=n)) +
+    geom_col() +
+    facet_wrap(~provider)
+     
+```
+
+```{r}
+# Number of Color Patients by Sex
+df_hhs$gender <-  "None"
+df_hhs$gender[df_hhs$sex==1] <- "Male"
+df_hhs$gender[df_hhs$sex==2] <- "Female"
+
+
+df_hhs %>% 
+  filter(race==of_color) %>% 
+  filter(sex!="None") %>% 
+   group_by(race, gender) %>%
+   count() %>% 
+   ggplot(mapping = aes(x=race, y=n, fill=gender)) + 
+    geom_col()
+```
+
+
+```{r}
+# Average Age for Of-Color Patients
+df_hhs %>% 
+  filter(race==of_color) %>% 
+   group_by(race) %>% 
+   summarise(avg = mean(age)) %>% 
+    ggplot(mapping=aes(x=race, y=avg)) +
+     geom_col()
+```
+
+```{r}
+# Average Length of Stay for Of-Color Patients
+df_hhs %>% 
+  filter(race==of_color) %>% 
+   group_by(race) %>% 
+   summarise(avg = mean(los)) %>% 
+    ggplot(mapping=aes(x=race, y=avg)) +
+     geom_col()
+```
+
+```{r}
+# Average Total Pay for Of-Color Patients
+df_hhs %>% 
+  filter(race==of_color) %>% 
+   group_by(race) %>% 
+   summarise(avg = mean(tot)) %>% 
+    ggplot(mapping=aes(x=race, y=avg)) +
+     geom_col()
+```
+
+```{r}
+# Payer Type by Of-Color Patients
+df_hhs %>% 
+  filter(race==of_color) %>% 
+   group_by(payer, race) %>% 
+   count() %>% 
+    ggplot(mapping=aes(x=payer, y=n, color=race)) +
+     geom_col()
+```
+
+```{r}
+# Admission Type by Of-Color Patient
+df_hhs$admtype <- factor(df_hhs$admtype)
+
+df_hhs %>% 
+  filter(race==of_color) %>% 
+   group_by(admtype, race) %>% 
+   count() %>% 
+    ggplot(mapping=aes(x=admtype, y=n, color=race)) +
+     geom_col()
+```
+
+```{r}
+# Number of Patients by Month
+df_hhs$moa <- factor(df_hhs$moa)
+
+df_hhs %>% 
+  filter(race==of_color) %>% 
+   group_by(moa, race) %>% 
+   count() %>% 
+    ggplot(mapping=aes(x=moa, y=n, color=race)) +
+     geom_col()
+```
+
+```{r}
+# Number of Patients by Season
+df_hhs$moa <- as.numeric(df_hhs$moa)
+
+spring <- c(3,4,5)
+summer <- c(6,7,8)
+fall   <- c(9,10,11)
+
+df_hhs$season <- "Winter"
+df_hhs$season[df_hhs$moa %in% spring] <- "Spring"
+df_hhs$season[df_hhs$moa %in% summer] <- "Summer"
+df_hhs$season[df_hhs$moa %in% fall]  <- "Fall"
+
+df_hhs %>% 
+  filter(race==of_color) %>% 
+   group_by(season, race) %>% 
+   count() %>% 
+    ggplot(mapping=aes(x=season, y=n, color=race)) +
+     geom_col()
+
+```
+
+```{r}
+# Total Pay by Month
+df_hhs %>% 
+  filter(race==of_color) %>% 
+   group_by(moa, race) %>% 
+   summarise(avg = mean(tot)) %>% 
+    ggplot(aes(x=moa, y=avg, color=race)) +
+     geom_line() +
+     transition_reveal(moa)
+```
+In summary, here is a brief description of the insights extracted from this section. As of the time that the data was collected, White patients make up a total of about 62% of all visits. Rhode Island Hospital, Women and Infants and Meriam had the highest concentration of patients of color. There is an about equal distribution for Black patients in terms of sex. Asian and hispanic patients tend to have more females. Black patients tend to be older on average. This also adds to the fact that they tend to stay more on average as well and thereby pay more for their length of stay. A majority of patients of color have dues paid by Medicare or Medicaid (locally and federally). Patients of color tend to be admitted on emergency or urgent type. Hispanic due to their high concentration of females have a larger portion of birth than other races. Chronologically, there is a spike within the months of March to May for Hispanic and Black patients. Looking at it through seasons, They both see a drop within summer months. Finally, the amount charged by patients of color varies a lot with Asian and Black patients seeing large drops and rises in their charge over time. Overall, just like the previous, I found this information surprising. One statistics that I found specially interesting was the reliance of people of color toward healthcare programs like Medicare and Medicaid. Without these programs, just on the cost of stay alone, many of the patients would be in high financial issues.
+
+-------
+
+## III. Predictive Modeling
+
+III.I Designing Data Set
+
+ III.I.I Target Variable
+```{r}
+median <- median(df_hhs$tot)
+
+df_hhs$target <- 'low'
+df_hhs$target[df_hhs$tot>=median] <- 'high'
+
+table(df_hhs$target)
+```
+
+ III.I.II Create Dataset
+```{r}
+df_hhs_x <- df_hhs %>% 
+              select(age,sex,raceethn,provider,moa,mod,admtype,campus,los,target) %>% 
+                filter(raceethn!='') %>% 
+                 filter(admtype!='')
+
+df_hhs_x$sex <- factor(df_hhs_x$sex)
+df_hhs_x$raceethn <- factor(df_hhs_x$raceethn)
+df_hhs_x$provider <- factor(df_hhs_x$provider)
+df_hhs_x$moa <- factor(df_hhs_x$moa)
+df_hhs_x$mod <- factor(df_hhs_x$mod)
+df_hhs_x$admtype <- factor(df_hhs_x$admtype)
+df_hhs_x$campus <- factor(df_hhs_x$campus)
+```
+ 
+ III.I.III Split Dataset
+```{r}
+set.seed(2020)
+splitIndex <- createDataPartition(df_hhs_x$target, p=.90, list=FALSE)
+
+df_train <- df_hhs_x[splitIndex, ]
+df_test  <- df_hhs_x[-splitIndex,]
+head(df_train)
+```
+
+III.II Model: Decision Tree
+
+ III.II.I Design of Model and Prediction
+```{r}
+decision_tree <- rpart(target~., data=df_train, control=rpart.control(maxdepth=3))
+prediction <- predict(decision_tree, df_test, type='class')
+```
+
+ III.II.II Design of Tree
+```{r}
+fancyRpartPlot(decision_tree)
+```
+
+ III.II.III Variable Importance
+```{r}
+barplot(decision_tree$variable.importance)
+```
+III.III Model: Logistic Regression
+
+ III.III.I Design Model
+```{r}
+# tuneGrid = expand.grid(iter = 1:3)
+# trControl = trainControl(method = "cv", number = 5)
+# 
+# logistic <- train(target~.,data = df_train,
+#                       method = "LMT",
+#                       trControl = trControl,
+#                       tuneGrid = tuneGrid)
+```
+ III.III.II Hyperparameters
+```{r}
+# plot(logistic)
+```
+
+
+III.IV Model: Random Forest
+
+ III.IV.I Design Model
+```{r}
+# tuneGrid = expand.grid(mtry = 2:3)
+# trControl = trainControl(method = "cv", number = 2)
+# 
+# random_forest <- train(target~.,data = df_train,
+#                                 method = "rf",
+#                                 trControl = trControl,
+#                                 tuneGrid = tuneGrid)
+```
+ III.IV.II Hyperparameters
+```{r}
+# plot(random_forest)
+```
+
+
+III.V Model: Naive Bayes Classifier
+
+ III.V.I Design Model
+```{r}
+# tuneGrid = expand.grid(smooth=1:3)
+# trControl = trainControl(method = "cv", number = 5)
+# 
+# bayes <- train(target~.,data = df_train,
+#                            method = "nbDiscrete",
+#                            trControl = trControl,
+#                            tuneGrid = tuneGrid)
+```
+ III.V.II Hyperparameters
+```{r}
+# plot(bayes)
+```
+
+```{r}
+# results <- resamples(list('Decision Tree' = decision_tree,
+#                           'Random Forest' = random_forest,
+#                           'Logistic' = logistic,
+#                           'Naive Bayes'= bayes))
+# bwplot(results)
+```
+
+
+III.VI Personalized Model
+
+Target Variable: High-Alert Event
+```{r}
+df_hhs_x$target <- "Not_OfColor"
+df_hhs_x$target[df_hhs_x$raceethn %in% c("2", "3", "7")] <- "OfColor"
+
+df_hhs_x$raceethn <- NULL
+
+table(df_hhs_x$target)
+
+```
+
+Split Dataset
+```{r}
+set.seed(2020)
+splitIndex <- createDataPartition(df_hhs_x$target, p=.90, list=FALSE)
+
+df_train <- df_hhs_x[splitIndex, ]
+df_test  <- df_hhs_x[-splitIndex,]
+head(df_train)
+```
+
+III.II Model: Decision Tree
+
+ III.II.I Design of Model and Prediction
+```{r}
+# decision_tree2 <- rpart(target~., data=df_train, control=rpart.control(maxdepth=3))
+# prediction <- predict(decision_tree2, df_test, type='class')
+# decision_tree2
+```
+ III.II.II Design of Tree
+```{r}
+# fancyRpartPlot(decision_tree2)
+```
+ III.II.III Variable Importance
+```{r}
+# barplot(decision_tree$variable.importance)
+```
+
+Design Model
+```{r}
+# tuneGrid = expand.grid(iter = 1:2)
+# trControl = trainControl(method = "cv", number = 5)
+# 
+# logistic2 <- train(target2~.,data = df_train,
+#                       method = "LMT",
+#                       trControl = trControl,
+#                       tuneGrid = tuneGrid)
+```
+Hyperparameters
+```{r}
+# plot(logistic2)
+```
+
+
+Design Model
+```{r}
+# tuneGrid = expand.grid(mtry = 2:4)
+# trControl = trainControl(method = "cv", number = 5)
+# 
+# random_forest2 <- train(target2~.,data = df_train,
+#                                 method = "rf",
+#                                 trControl = trControl,
+#                                 tuneGrid = tuneGrid)
+
+
+```
+Hyperparameters
+```{r}
+# plot(random_forest2)
+```
+
+
+Model: Adaboost
+
+Design Model
+```{r}
+# tuneGrid = expand.grid(smooth=1:3)
+# trControl = trainControl(method = "cv", number = 5)
+# 
+# bayes2 <- train(target2~.,data = df_train,
+#                           method = "nbDiscrete",
+#                           trControl = trControl,
+#                           tuneGrid = tuneGrid)
+```
+ III.V.II Hyperparameters
+```{r}
+# plot(bayes2)
+```
+
+```{r}
+# results <- resamples(list('Decision Tree' = decision_tree2,
+#                           'Random Forest' = random_forest2,
+#                           'Logistic' = logistic2,
+#                           'Naive Bayes'= bayes2))
+# 
+# bwplot(results)
+```
+
+

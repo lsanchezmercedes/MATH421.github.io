@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Midterm Study</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Luis Sanchez Mercedes" />
+    <script src="Midterm_Presentation_files/header-attrs/header-attrs.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Midterm Study
+## Analysis of RI Healthcare Data on Of Color Patient Population
+### Luis Sanchez Mercedes
+### November 01, 2021 <br>Updated: Nov 15, 2021
+
+---
+
+
+
+
+
+
+---
+# Objective of the Study 
+### - To Understand The Composition of Of Color Patients within Providers
+### - To Understand The Characteristics That Make Up This Population
+### - To Understand The Reasoning of Visits by These Patients
+
+---
+# Subjects of the Study
+## - Data from three Rhode Island specialty hospitals, Bradley, Butler, and Rehabilitation includes features such as Age, Sex, Race, Providers, Service, etc.
+### - This data was segmented for year of discharge of 2018 and Race feature had unknowns and blank removed for the sake of the analysis
+
+---
+class: inverse
+# Illustration 1: Percentage of Patients by Race,
+#### White patients make up a total of about 62% of all visits
+![](midterm/image1.png)
+---
+class: inverse
+# Illustration 2: Number of Color Patients by Provider
+#### Rhode Island Hospital, Women and Infants and Meriam had the highest
+![](midterm/image2.png)
+
+---
+class: inverse
+# Illustration 3: Number of Color Patients by Sex
+#### About equal for Black patients, more female for Hispanics
+![](midterm/image3.png)
+
+---
+class: inverse
+# Illustration 4: Average Age for Of-Color Patients
+#### On average, Black patients tend to be older
+![](midterm/image4.png)
+
+---
+class: inverse
+# Illustration 5: Average Length of Stay for Of-Color Patients
+#### On average, Black patients to stay longer when going to providers
+![](midterm/image5.png)
+
+---
+class: inverse
+# Illustration 6: Average Total Pay for Of-Color Patients
+#### On aveage, Black patients tend to pay more than counterparts
+![](midterm/image6.png)
+
+---
+class: inverse
+# Illustration 7: Payer Type by Of-Color Patients
+#### A majority of patients of color have dues pay by Medicare
+![](midterm/image7.png)
+
+---
+class: inverse
+# Illustration 8: Admission Type by Of-Color Patient
+#### Patients of color tend to be admitted on emergency or urgent type
+![](midterm/image8.png)
+
+---
+class: inverse
+# Illustration 9: Number of Patients by Month
+#### Spike within the months of March to May for Hispanic and Black patients
+![](midterm/image9.png)
+
+---
+class: inverse
+# Illustration 10: Number of Patients by Season
+#### Drop within the summer months for Hispanic and Black patients
+![](midterm/image10.png)
+
+---
+class: inverse
+# Illustration 11: Total Pay by Month
+#### Alot of volatility amongst Asian and Black payout
+![](midterm/animation.gif)
+---
+# Predictive Modelling 
+## Two models were ran under this data.....
+#### Model 1: Predictive if patient will have low/high total cost based on median
+#### Model 2: Predictive if patient of color based on same characteristics
+
+---
+class: inverse
+# Model 1
+![](midterm/model1.png)
+
+
+---
+class: inverse
+# Model 2
+![](midterm/model3.png)
+
+---
+# Errors and Challenges
+### 1. Error from Graphing
+### 2. Training the Models
+### 3. Prepping the Data
+
+
+---
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create();
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

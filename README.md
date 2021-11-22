@@ -12,4 +12,5 @@
 - [Click Here to my Assignment 10](Assignment10.html)
 - [Click Here to my Assignment 11](Assignment11.html)
 - [Click Here to my Assignment 12](Assignment12.html)
-
+- [Click Here to Midterm Exam](Midterm_Final.html)
+- [Click Here to Midterm Presentation](Midterm_Presentation.html)
