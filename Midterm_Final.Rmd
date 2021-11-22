@@ -206,7 +206,9 @@ df_hhs %>%
      filter(los==1) %>% 
         summarise(avg=mean(tot))
 ```
+
 In summary, here is a brief description of the insights extracted from this section. In terms of missing values, the variable of payfix, preorday, observation hours, number of icu days, birth weight, and ecodub92 were removed due to its high concentration of missing. In terms of month of admission, the month of October had the highest number of admissions and consequently, the most male patients admitted. The month of march had the most teenage female admitted. Rhode Island Hospital had the most female admission in October. January had the oldest patients by average with an age of 51.8. Women and Infants hold the highest charge of any provider with a 3 million charge. Rhode Island Hospital had the least total charge for a teenage boy with a value of approximately 3k. In terms of season, the length of stay was distributed by Summer 4.96, Fall  4.96, Winter  4.93, Spring  4.84. Summer had the longest. Finally on average a 20-year old male staying one day gets charged approximately 16k. Overall, pretty interesting data. The one that struck me the most was the statistics of the 20-year old male since as someone close to that age, it was surprising the average cost was that high.
+
 -------
 
 ## II. Data Visualization
