@@ -1,0 +1,665 @@
+---
+title: "Assignment 13"
+author: "Luis Sanchez Mercedes"
+date: "11/17/2021"
+output: html_document
+---
+
+-------
+
+### Netflix Data
+
+**1.** Download the `netflix_titles` at this [link](data/netflix_titles.csv).  Create a century variable taking two values:
+
+```{r}
+# IMPORT-001: Import libraries that will be utilized within analysis
+# =======================================================================
+library(RColorBrewer)
+library(textrecipes)
+library(yardstick)
+library(wordcloud)
+library(tidyverse)
+library(tidytext)
+library(textdata)
+library(themis)
+library(knitr)
+library(caret)
+```
+
+```{r}
+# DATA-001: Import data and create dataframe to be used
+# =======================================================================
+df_netflix <- readr::read_csv('C:/Users/student/Downloads/netflix_titles.csv')
+head(df_netflix)
+```
+
+```{r}
+# DATA-002: Create century binary variable to differentiate between 1900s and 2000s
+# =======================================================================
+df_netflix$century <- "20"
+df_netflix$century[df_netflix$release_year>=2000] <- "21"
+```
+
+**2. Word Frequency**  
+```{r}
+# DATA-003: Get top 10 most frequent words of movies/TV shows in the 20th century
+# =======================================================================
+df_netflix %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Filtering
+  # ---------------------------------------------------------------------
+  filter(century=="20") %>%  # Filter to the 21st century for further analysis
+  # ---------------------------------------------------------------------
+   # 2. Data Manipulation
+  # ---------------------------------------------------------------------
+   unnest_tokens(input=description, output=word) %>% # obtain words from description
+    anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+     count(century, word, sort=TRUE) %>%  # count the words and sort with the highest
+     head(10) %>%  # filter to the top 10 words for analysis
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(x=n, y=reorder(word, n))) + # start plotting plane with parameters
+      geom_col() + # create bar chart to be display
+      labs(y='', x='Frequency') # modified axis with plot
+```
+
+```{r}
+# DATA-004: Get top 10 most frequent words of movies/TV shows in the 21st century
+# =======================================================================
+df_netflix %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Filtering
+  # ---------------------------------------------------------------------
+  filter(century=="21") %>% # Filter to the 21st century for further analysis
+  # ---------------------------------------------------------------------
+   # 2. Data Manipulation
+  # ---------------------------------------------------------------------
+   unnest_tokens(input=description, output=word) %>% # obtain words from description
+    anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+    count(century, word, sort=TRUE) %>% # count the words and sort with the highest
+    head(10) %>% # filter to the top 10 words for analysis
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(x=n, y=reorder(word, n))) + # start plotting plane with parameters
+      geom_col() + # create bar chart to be display
+      labs(y='', x='Frequency') # modified axis with plot
+```
+
+```{r}
+# DATA-005: Create a side-by-side comparison
+# =======================================================================
+df_netflix %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(century, word, sort=TRUE) %>% # count the words and sort with the highest
+  # ---------------------------------------------------------------------
+   # 2. Filtering
+  # ---------------------------------------------------------------------
+     group_by(century) %>% # group observations by the century
+     slice_max(n, n=10) %>% # slice the maximum by each and limit to 10 obs
+     ungroup() %>%  # ungroup observations by century
+     mutate(word = reorder_within(word, by = n, within = century)) %>%  # modified words to order by size
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(n, word, fill=century)) + # start plotting plane with parameters
+      geom_col(show.legend = FALSE) + # create bar chart to be display
+      facet_wrap(~century, scales = "free") +
+      labs(x = "Frequency",
+        y = NULL)+
+        scale_y_reordered() 
+```
+
+**3. Word Cloud** 
+
+```{r}
+# DATA-006: Plot the word cloud of the words in the movies/TV Shows in the 20th century.
+# =======================================================================
+pal <- brewer.pal(8,"Dark2") # set default color of word clod
+# -----------------------------------------------------------------------
+df_netflix %>%  # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Filtering
+  # ---------------------------------------------------------------------
+  filter(century=="20") %>% # Filter to the 21st century for further analy
+  # ---------------------------------------------------------------------
+    # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(century, word, sort=TRUE) %>% # count the words and sort with the highest
+   with( # calls unto functioned below
+     wordcloud(word, n, random.order = FALSE, max.words = 50, colors=pal))
+```
+
+```{r}
+# DATA-007: Plot the word cloud of the words in the movies/TV Shows in the 21st century.
+# =======================================================================
+pal <- brewer.pal(8,"Dark2") # set default color of word clod
+# -----------------------------------------------------------------------
+df_netflix %>%  # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Filtering
+  # ---------------------------------------------------------------------
+  filter(century=="21") %>% # Filter to the 21st century for further analy
+  # ---------------------------------------------------------------------
+    # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(century, word, sort=TRUE) %>% # count the words and sort with the highest
+   with( # calls unto functioned below
+     wordcloud(word, n, random.order = FALSE, max.words = 50, colors=pal))
+```
+
+**4. Sentiment Analysis** 
+
+```{r}
+# DATA-008: Use the sentiment analysis by "Bing" lexicons to figure out positivity of each
+# =======================================================================
+df_netflix %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(century, word, sort=TRUE) %>% # count the words and sort with the highest
+  # ---------------------------------------------------------------------
+   # 2. Filtering
+  # ---------------------------------------------------------------------
+     group_by(century) %>% # group observations by the century
+      inner_join(get_sentiments("bing")) %>% # obtaining positive/negative value
+      filter(!is.na(sentiment)) %>%  # eliminate na within this set
+      count(sentiment, sort = TRUE) %>% #  count the number of sentiment
+     group_by(century) %>% # group observations by the century again
+       mutate(n = n/sum(n)) %>% # obtaining persentage of observation
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(century, n, fill=sentiment)) + # start plotting plane with parameters
+      geom_col(position = 'fill') + # create bar chart to be display
+      labs(y='Relative Frequency', x ='') # modified axis with plot
+```
+
+```{r}
+# DATA-009: Use the sentiment analysis by "nrc" lexicons to figure out positivity of each
+# =======================================================================
+df_netflix %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(century, word, sort=TRUE) %>% # count the words and sort with the highest
+  # ---------------------------------------------------------------------
+   # 2. Filtering
+  # ---------------------------------------------------------------------
+     group_by(century) %>% # group observations by the century
+      inner_join(get_sentiments("nrc")) %>% # obtaining emotional value
+      filter(!is.na(sentiment)) %>%  # eliminate na within this set
+      count(sentiment, sort = TRUE) %>% #  count the number of sentiment
+     group_by(century) %>% # group observations by the century again
+       mutate(n = n/sum(n)) %>%  # obtaining persentage of observation
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(sentiment, n, fill=century)) + # start plotting plane with parameters
+      geom_col(position = 'fill') + # create bar chart to be display
+      labs(y='Relative Frequency', x ='') # modified axis with plot
+```
+
+```{r}
+# DATA-010: Use the sentiment analysis by "afinn" lexicons to figure out positivity of each
+# =======================================================================
+df_netflix %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(century, word, sort=TRUE) %>% # count the words and sort with the highest
+  # ---------------------------------------------------------------------
+   # 2. Filtering
+  # ---------------------------------------------------------------------
+     group_by(century) %>% # group observations by the century
+      inner_join(get_sentiments("afinn")) %>% # obtaining emotional value
+      mutate(sentiment=value) %>% # modify vlue to be encoded to sentiment
+      filter(!is.na(sentiment)) %>%  # eliminate na within this set
+      count(sentiment, sort = TRUE) %>% #  count the number of sentiment
+     group_by(century) %>% # group observations by the century again
+       mutate(n = n/sum(n)) %>% # obtaining persentage of observation
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(century, n, fill=factor(sentiment))) + # start plotting plane with parameters
+      geom_col(position = 'dodge') + # create bar chart to be display
+      labs(y='Relative Frequency', x ='', fill='Sentiment') # modified axis with plot
+```
+
+**5. Modeling**
+
+```{r}
+# DATA-011: Create modified dataset for analyzing
+# =========================================================================
+df_netflix_century <- df_netflix %>% # call the dataset for manipulation and assigned to new variable
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  mutate(target = century) %>% # modified field name of century to target
+  select(target, description) # select the fields target and description for dataset
+```
+
+```{r}
+# DATA-012: Convert text data to numeric data for analysis
+# =========================================================================
+sentiment <- recipe(target~description, data=df_netflix_century) %>% # creates procedure for extraction
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  step_tokenize(description) %>% # tokenize the words for the description
+  step_tokenfilter(description, max_tokens=50) %>% # take 50 words for each movie
+  step_tfidf(description) %>% # apply weight for retrieval process
+  step_normalize(all_numeric_predictors()) %>% # normalize numeric data
+  step_smote(target) %>% # add additional records ot balance the set
+  # ---------------------------------------------------------------------
+  prep() # eaxecute commands
+# -------------------------------------------------------------------------
+df_netflix_century <- juice(sentiment) # add sentiment within the analysis
+```
+
+```{r}
+# DATA-011: Split the data between training and testing for model tuning
+# =========================================================================
+set.seed(2021) # initiate random seed in order for results to be reproducible
+# -------------------------------------------------------------------------
+splitIndex <- createDataPartition(df_netflix_century$target, p=.7, list=FALSE) # split the dataset
+# -------------------------------------------------------------------------
+df_train <- df_netflix_century[splitIndex,] # create training data set
+df_test  <- df_netflix_century[-splitIndex,] # create testing data set
+```
+
+```{r}
+# DATA-012: Train the random forest model for testing
+# =========================================================================
+# forest_ranger <- train(target~., data=df_train, method = "ranger") # initate forest model
+# # -------------------------------------------------------------------------
+# prediction <- predict(forest_ranger, df_test) # make predictions
+# cm <- confusionMatrix(data = prediction, reference = df_test$target) # create confusion matrix
+# # -------------------------------------------------------------------------
+# cm$overall[1] # display the accuracy of model
+```
+
+```{r}
+# DATA-013: plot confusion matrix for analysis
+# =========================================================================
+# d = data.frame(pred = prediction, obs = df_test$target) # create dataframe with predictions
+# # -------------------------------------------------------------------------
+# d %>% conf_mat(pred, obs) %>% autoplot # create confusion matrix and plot it
+```
+
+```{r}
+# DATA-014: Create new century variable based on different time frames
+# =========================================================================
+df_netflix$century2 <- "21"
+df_netflix$century2[df_netflix$released_year<1950] <- 'first_half_20'
+df_netflix$century2[df_netflix$released_year>=1950 & df_netflix$released_year<2000] <- 'second_half_20'
+```
+
+New Century Variable
+```{r}
+# DATA-015: Create modified dataset for analyzing
+# =========================================================================
+df_netflix_century2 <- df_netflix %>% # call the dataset for manipulation and assigned to new variable
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  mutate(target = century2) %>% # modified field name of century to target
+  select(target, description) # select the fields target and description for dataset
+```
+
+```{r}
+# DATA-016: Convert text data to numeric data for analysis
+# =========================================================================
+sentiment <- recipe(target~description, data=df_netflix_century2) %>% # creates procedure for extraction
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  step_tokenize(description) %>% # tokenize the words for the description
+  step_tokenfilter(description, max_tokens=50) %>% # take 50 words for each movie
+  step_tfidf(description) %>% # apply weight for retrieval process
+  step_normalize(all_numeric_predictors()) %>% # normalize numeric data
+  step_smote(target) %>% # add additional records ot balance the set
+  # ---------------------------------------------------------------------
+  prep() # eaxecute commands
+# -------------------------------------------------------------------------
+df_netflix_century2 <- juice(sentiment) # add sentiment within the analysis
+```
+
+```{r}
+# DATA-017: Split the data between training and testing for model tuning
+# =========================================================================
+set.seed(2021) # initiate random seed in order for results to be reproducible
+# -------------------------------------------------------------------------
+splitIndex <- createDataPartition(df_netflix_century2$target, p=.7, list=FALSE) # split the dataset
+# -------------------------------------------------------------------------
+df_train <- df_netflix_century2[ splitIndex,] # create training data set
+df_test  <- df_netflix_century2[-splitIndex,] # create testing data set
+```
+
+```{r}
+# DATA-018: Train the random forest model for testing
+# =========================================================================
+# forest_ranger <- train(target~., data=df_train, method = "ranger") # initate forest model
+# # -------------------------------------------------------------------------
+# prediction <- predict(forest_ranger, df_test) # make predictions
+# cm <- confusionMatrix(data = prediction, reference = df_test$target) # create confusion matrix
+# # -------------------------------------------------------------------------
+# cm$overall[1] # display the accuracy of model
+```
+
+```{r}
+# DATA-019: plot confusion matrix for analysis
+# =========================================================================
+# d = data.frame(pred = prediction, obs = df_test$target) # create dataframe with predictions
+# # -------------------------------------------------------------------------
+# d %>% conf_mat(pred, obs) %>% autoplot # create confusion matrix and plot it
+```
+
+**6. New Variable: Older Audience Content**
+```{r}
+# DATA-020: Create for higher aged audience ("R" and "TV-MA")
+# =========================================================================
+df_netflix$audience <- "Younger" # labels all values in the variable for younger audience
+df_netflix$audience[df_netflix$rating %in% c("R", "TV-MA")] <- "Older" # modifies to older if rated R or TV-MA
+```
+```{r}
+# DATA-021: Create a side-by-side comparison
+# =======================================================================
+df_netflix %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(audience, word, sort=TRUE) %>% # count the words and sort with the highest
+  # ---------------------------------------------------------------------
+   # 2. Filtering
+  # ---------------------------------------------------------------------
+     group_by(audience) %>% # group observations by the century
+     slice_max(n, n=10) %>% # slice the maximum by each and limit to 10 obs
+     ungroup() %>%  # ungroup observations by century
+     mutate(word = reorder_within(word, by = n, within = audience)) %>%  # modified words to order by size
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(n, word, fill=audience)) + # start plotting plane with parameters
+      geom_col(show.legend = FALSE) + # create bar chart to be display
+      facet_wrap(~audience, scales = "free") +
+      labs(x = "Frequency",
+        y = NULL)+
+        scale_y_reordered() 
+```
+
+```{r}
+# DATA-022: Plot the word cloud of the words in the Older content
+# =======================================================================
+pal <- brewer.pal(8,"Dark2") # set default color of word clod
+# -----------------------------------------------------------------------
+df_netflix %>%  # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Filtering
+  # ---------------------------------------------------------------------
+  filter(audience=="Older") %>% # Filter to the 21st century for further analy
+  # ---------------------------------------------------------------------
+    # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(audience, word, sort=TRUE) %>% # count the words and sort with the highest
+   with( # calls unto functioned below
+     wordcloud(word, n, random.order = FALSE, max.words = 50, colors=pal))
+```
+
+```{r}
+# DATA-023: Use the sentiment analysis by "nrc" lexicons to figure out positivity of each
+# =======================================================================
+df_netflix %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=description, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(audience, word, sort=TRUE) %>% # count the words and sort with the highest
+  # ---------------------------------------------------------------------
+   # 2. Filtering
+  # ---------------------------------------------------------------------
+     group_by(audience) %>% # group observations by the audience
+      inner_join(get_sentiments("nrc")) %>% # obtaining emotional value
+      filter(!is.na(sentiment)) %>%  # eliminate na within this set
+      count(sentiment, sort = TRUE) %>% #  count the number of sentiment
+     group_by(audience) %>% # group observations by the audience again
+       mutate(n = n/sum(n)) %>%  # obtaining persentage of observation
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(sentiment, n, fill=audience)) + # start plotting plane with parameters
+      geom_col(position = 'fill') + # create bar chart to be display
+      labs(y='Relative Frequency', x ='') # modified axis with plot
+```
+
+
+
+```{r}
+# DATA-023: Create modified dataset for analyzing
+# =========================================================================
+df_netflix_audience <- df_netflix %>% # call the dataset for manipulation and assigned to new variable
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  mutate(target = audience) %>% # modified field name of century to target
+  select(target, description) # select the fields target and description for dataset
+```
+
+```{r}
+# DATA-024: Convert text data to numeric data for analysis
+# =========================================================================
+sentiment <- recipe(target~description, data=df_netflix_audience) %>% # creates procedure for extraction
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  step_tokenize(description) %>% # tokentize the words for the description
+  step_tokenfilter(description, max_tokens=50) %>% # take 50 words for each movie
+  step_tfidf(description) %>% # apply weight for retrieval process
+  step_normalize(all_numeric_predictors()) %>% # normalize numeric data
+  step_smote(target) %>% # add additional records ot balance the set
+  # ---------------------------------------------------------------------
+  prep() # execute commands
+# -------------------------------------------------------------------------
+df_netflix_audience <- juice(sentiment) # add sentiment within the analysis
+```
+
+```{r}
+# DATA-025: Split the data between training and testing for model tuning
+# =========================================================================
+set.seed(2021) # initiate random seed in order for results to be reproducible
+# -------------------------------------------------------------------------
+splitIndex <- createDataPartition(df_netflix_audience$target, p=.7, list=FALSE) # split the dataset
+# -------------------------------------------------------------------------
+df_train <- df_netflix_audience[ splitIndex,] # create training data set
+df_test  <- df_netflix_audience[-splitIndex,] # create testing data set
+```
+
+```{r}
+# DATA-026: Train the random forest model for testing
+# =========================================================================
+# forest_ranger <- train(target~., data=df_train, method = "ranger") # initate forest model
+# # -------------------------------------------------------------------------
+# prediction <- predict(forest_ranger, df_test) # make predictions
+# cm <- confusionMatrix(data = prediction, reference = df_test$target) # create confusion matrix
+# # -------------------------------------------------------------------------
+# cm$overall[1] # display the accuracy of model
+```
+
+```{r}
+# DATA-027: plot confusion matrix for analysis
+# =========================================================================
+# d = data.frame(pred = prediction, obs = df_test$target) # create dataframe with predictions
+# # -------------------------------------------------------------------------
+# d %>% conf_mat(pred, obs) %>% autoplot # create confusion matrix and plot it
+```
+
+**6. New Variable: Older Audience Content**
+```{r}
+# DATA-028: Animal crossing tsv file for analysis
+# =======================================================================
+df_animal <- read_tsv('C:/Users/student/Downloads/user_reviews.tsv')
+head(df_animal)
+```
+
+```{r}
+# DATA-029: Create new variable for analysis
+# =======================================================================
+df_animal$rating <- "bad"
+df_animal$rating[df_animal$grade>7] <- "good"
+table(df_animal$rating)
+```
+```{r}
+# # DATA-030: Create a side-by-side comparison
+# # =======================================================================
+# df_animal %>% # call the dataset for manipulation to be done
+#   # ---------------------------------------------------------------------
+#    # 1. Data Manipulation
+#   # ---------------------------------------------------------------------
+#   unnest_tokens(input=text, output=word) %>% # obtain words from description
+#    anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+#    count(rating, word, sort=TRUE) %>% # count the words and sort with the highest
+#   # ---------------------------------------------------------------------
+#    # 2. Filtering
+#   # ---------------------------------------------------------------------
+#      group_by(rating) %>% # group observations by the century
+#      slice_max(n, n=10) %>% # slice the maximum by each and limit to 10 obs
+#      ungroup() %>%  # ungroup observations by century
+#      mutate(word = reorder_within(word, by = n, within =rating)) %>%  # modified words to order by size
+#   # ---------------------------------------------------------------------
+#    # 3. Plotting
+#   # ---------------------------------------------------------------------
+#      ggplot(aes(n, word, fill=rating)) + # start plotting plane with parameters
+#       geom_col(show.legend = FALSE) + # create bar chart to be display
+#       facet_wrap(~rating, scales = "free") +
+#       labs(x = "Frequency",
+#         y = NULL)+
+#         scale_y_reordered() 
+
+```
+
+```{r}
+# DATA-031: Plot the word cloud of the words in the Older content
+# =======================================================================
+pal <- brewer.pal(8,"Dark2") # set default color of word clod
+# -----------------------------------------------------------------------
+df_animal %>%  # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Filtering
+  # ---------------------------------------------------------------------
+  filter(rating=="bad") %>% # Filter to the 21st century for further analy
+  # ---------------------------------------------------------------------
+    # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=text, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(rating, word, sort=TRUE) %>% # count the words and sort with the highest
+   with( # calls unto functioned below
+     wordcloud(word, n, random.order = FALSE, max.words = 50, colors=pal))
+```
+
+```{r}
+# DATA-032: Use the sentiment analysis by "nrc" lexicons to figure out positivity of each
+# =======================================================================
+df_animal %>% # call the dataset for manipulation to be done
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  unnest_tokens(input=text, output=word) %>% # obtain words from description
+   anti_join(get_stopwords()) %>%  # remove stop words within the words of description
+   count(rating, word, sort=TRUE) %>% # count the words and sort with the highest
+  # ---------------------------------------------------------------------
+   # 2. Filtering
+  # ---------------------------------------------------------------------
+     group_by(rating) %>% # group observations by the audience
+      inner_join(get_sentiments("nrc")) %>% # obtaining emotional value
+      filter(!is.na(sentiment)) %>%  # eliminate na within this set
+      count(sentiment, sort = TRUE) %>% #  count the number of sentiment
+     group_by(rating) %>% # group observations by the audience again
+       mutate(n = n/sum(n)) %>%  # obtaining persentage of observation
+  # ---------------------------------------------------------------------
+   # 3. Plotting
+  # ---------------------------------------------------------------------
+     ggplot(aes(sentiment, n, fill=rating)) + # start plotting plane with parameters
+      geom_col(position = 'fill') + # create bar chart to be display
+      labs(y='Relative Frequency', x ='') # modified axis with plot
+```
+
+```{r}
+# DATA-033: Create modified dataset for analyzing
+# =========================================================================
+df_animal_rating <- df_animal %>% # call the dataset for manipulation and assigned to new variable
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  mutate(target = rating) %>% # modified field name of century to target
+  select(target, text) # select the fields target and description for dataset
+```
+
+```{r}
+# DATA-034: Convert text data to numeric data for analysis
+# =========================================================================
+sentiment <- recipe(target~text, data=df_animal_rating) %>% # creates procedure for extraction
+  # ---------------------------------------------------------------------
+   # 1. Data Manipulation
+  # ---------------------------------------------------------------------
+  step_tokenize(text) %>% # tokentize the words for the description
+  step_tokenfilter(text, max_tokens=50) %>% # take 50 words for each movie
+  step_tfidf(text) %>% # apply weight for retrieval process
+  step_normalize(all_numeric_predictors()) %>% # normalize numeric data
+  step_smote(target) %>% # add additional records ot balance the set
+  # ---------------------------------------------------------------------
+  prep() # execute commands
+# -------------------------------------------------------------------------
+df_animal_rating <- juice(sentiment) # add sentiment within the analysis
+```
+
+```{r}
+# DATA-035: Split the data between training and testing for model tuning
+# =========================================================================
+set.seed(2021) # initiate random seed in order for results to be reproducible
+# -------------------------------------------------------------------------
+splitIndex <- createDataPartition(df_animal_rating$target, p=.7, list=FALSE) # split the dataset
+# -------------------------------------------------------------------------
+df_train <- df_animal_rating[ splitIndex,] # create training data set
+df_test  <- df_animal_rating[-splitIndex,] # create testing data set
+```
+
+```{r}
+# DATA-036: Train the random forest model for testing
+# =========================================================================
+# forest_ranger <- train(target~., data=df_train, method = "ranger") # initate forest model
+# # -------------------------------------------------------------------------
+# prediction <- predict(forest_ranger, df_test) # make predictions
+# cm <- confusionMatrix(data = prediction, reference = df_test$target) # create confusion matrix
+# # -------------------------------------------------------------------------
+# cm$overall[1] # display the accuracy of model
+```
+
+```{r}
+# DATA-037: plot confusion matrix for analysis
+# =========================================================================
+# d = data.frame(pred = prediction, obs = df_test$target) # create dataframe with predictions
+# # -------------------------------------------------------------------------
+# d %>% conf_mat(pred, obs) %>% autoplot # create confusion matrix and plot it
+```
+
