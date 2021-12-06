@@ -1,0 +1,428 @@
+---
+title: "Assignment 14"
+author: "Luis Sanchez Mercedes"
+date: "11/29/2021"
+output: html_document
+---
+
+```{r echo=FALSE}
+# IMPORT-001: Import libraries that will be utilized within analysis
+# =======================================================================
+library(rtweet) 
+library(tidytext)
+library(ggpubr) 
+library(tidyverse) 
+library(knitr)
+library(lubridate)
+library(wordcloud)
+library(RColorBrewer)
+```
+
+```{r}
+# DATA-001: Define the keyword and location for the tweet extraction
+# =======================================================================
+search_keyword  = '#ballondor' # keyword for scraping through twitter
+search_location = 'Toronto' # keyword for finding information on Toranta
+```
+
+```{r}
+# DATA-002: Extract keyword information utilizing the Twitter API
+# =======================================================================
+# df_twitter_kw <- search_tweets( # call function for extracting tweets
+#   # ---------------------------------------------------------------------
+#   q = search_keyword, # specifies the keyword that will be utilizing in scraping 
+#   n = 18000, # specifies the total amount of tweet to extract from API
+#   include_rts = FALSE, # specifies .....
+#   `-filter` = "replies", # specifies.....
+#   lang = "en") %>% # specifies the language of the tweets
+#   # ---------------------------------------------------------------------
+#    mutate(created_at = ymd_hms(format(created_at, tz = "US/Eastern"))) # manipulates 
+```
+
+```{r}
+# DATA-003: save the file locally and call upon the file for usage
+# =======================================================================
+# write_csv(df_twitter_kw, 'twitter_data_ballondor.csv') # write dataframe into csv
+# -----------------------------------------------------------------------
+df_twitter_kw <- read_csv('twitter_data_ballondor.csv') # calls upon csv file for usage
+head(df_twitter_kw)
+```
+
+```{r}
+# DATA-004: Illustration 1, Frequency of Hash Tag
+# =======================================================================
+df_twitter_kw %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation
+  # -----------------------------------------------------------------
+  unnest_tokens(output = hashtag, input = text, token = "tweets") %>% # obtain hashtages from tweet
+   filter(!hashtag %in% c("#ballondor", "#ballondor2021", "#balondeoro"), str_detect(hashtag, "^#")) %>%  # filter to hashtages only and no #ballondor
+    count(hashtag, sort = TRUE) %>% # obtain count of hashtag and sort to have highest
+  # -----------------------------------------------------------------
+   # 2. Filtering
+  # -----------------------------------------------------------------
+  head(5) %>% # filter to the top 5 hashtags within the dataset
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(hashtag, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-004: Illustration 2, Word Cloud
+# =======================================================================
+pal <- brewer.pal(8,"Dark2") # create palette for displaying word cloud
+# -----------------------------------------------------------------------
+df_twitter_kw %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation
+  # -----------------------------------------------------------------
+  unnest_tokens(output = hashtag, input = text, token = "tweets") %>% # obtain hashtages from tweet
+   filter(!hashtag %in% c("#ballondor", "#ballondor2021", "#balondeoro"), str_detect(hashtag, "^#")) %>%  # filter to hashtages only and no #ballondor
+    count(hashtag, sort = TRUE) %>% # obtain count of hashtag and sort to have highest\
+    mutate(hashtag = str_remove(hashtag, '#')) %>% # remove # symbol from all hashtags
+    with(wordcloud(hashtag, n, random.order = FALSE, max.words = 50, colors = pal)) # display word cloud
+```
+
+```{r}
+# DATA-004: Illustration 3, Sentiment of Tweets
+# =======================================================================
+df_twitter_kw %>%
+    unnest_tokens(input = text, output = word) %>% 
+    anti_join(get_stopwords()) %>% 
+    count(word, sort = TRUE) %>%
+    inner_join(get_sentiments("bing")) %>%
+    filter(!is.na(sentiment)) %>%
+    count(sentiment, sort = TRUE) %>% 
+    mutate(n = n/sum(n)) %>% 
+    ggplot(aes(y= reorder(sentiment, n), x = n))+geom_col()+
+    labs(y='Relative Frequency', x ='')
+```
+
+```{r}
+# DATA-004: Illustration 4, Frequency of Users
+# =======================================================================
+df_twitter_kw %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  count(screen_name, sort = TRUE) %>% # count the number of screen name and sort
+  head(5) %>% # filter to the top 5 users
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(screen_name, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-004: Illustration 5, Frequency of Mentions
+# =======================================================================
+df_twitter_kw %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  unnest_tokens(mentions, text, "tweets", to_lower = FALSE) %>%
+    filter(str_detect(mentions, "^@")) %>%  
+      count(mentions, sort = TRUE) %>%
+      head(10) %>%
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(mentions, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+  
+```
+
+```{r}
+# DATA-004: Illustration 6, Frequency of Source
+# =======================================================================
+df_twitter_kw %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  count(source, sort = TRUE) %>%
+   head(5) %>% 
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(source, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-004: Illustration 7, Frequency of Country
+# =======================================================================
+df_twitter_kw %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  filter(!is.na(country)) %>% 
+    count(country, sort = TRUE) %>%
+      head(5) %>%
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(country, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-004: Illustration 8, Frequency of Location
+# =======================================================================
+df_twitter_kw %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  filter(!is.na(location), !location=='') %>% 
+    count(location, sort = TRUE) %>%
+      head(5) %>% 
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(location, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+
+```
+
+```{r}
+# DATA-004: Illustration 9, Frequency of Tweets
+# =======================================================================
+df_twitter_kw %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  unnest_tokens(output = word, input = text, token = "words") %>%
+   anti_join(get_stopwords()) %>% 
+    filter(!word %in% c('https', 't.co')) %>% 
+    count(word, sort = TRUE) %>%
+     head(5) %>%
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(word, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-004: Illustration 10, Frequency of Tweets
+# =======================================================================
+ts_plot(df_twitter_kw, 'hours') +
+  labs(x = NULL, y = NULL,
+       title = "Frequency of tweets",
+       subtitle = paste0(format(min(df_twitter_kw$created_at), "%d %B %Y"), " to ", format(max(df_twitter_kw$created_at),"%d %B %Y")),
+       caption = "Data collected from Twitter's REST API via rtweet") +
+  theme_minimal()
+```
+
+```{r}
+# DATA-005: Display all available trends within the world and item other study
+# =======================================================================
+# trends_available() # shows all the treding tweets in each geographical regions
+# # ----------------------------------------------------------------------
+# get_trends(search_location) # show trends wwithin specific four days 
+```
+
+
+`
+```{r}
+# DATA-006: Extract location information utilizing the Twitter API
+# =======================================================================
+# df_twitter_loc <- search_tweets( # call function for extracting tweets
+#   # ---------------------------------------------------------------------
+#   q = '#minecraftmanhunt', # specifies the keyword that will be utilizing in scraping 
+#   n = 18000, # specifies the total amount of tweet to extract from API
+#   include_rts = FALSE, # specifies .....
+#   `-filter` = "replies", # specifies.....
+#   lang = "en") %>% # specifies the language of the tweets
+#   # ---------------------------------------------------------------------
+#    mutate(created_at = ymd_hms(format(created_at, tz = "US/Eastern"))) # manipulates 
+```
+
+```{r}
+# DATA-008: save the file locally and call upon the file for usage
+# =======================================================================
+# write_csv(df_twitter_loc, 'twitter_data_toronto.csv') # write dataframe into csv
+# -----------------------------------------------------------------------
+df_twitter_loc <- read_csv('twitter_data_toronto.csv') # calls upon csv file for usage
+head(df_twitter_loc)
+```
+
+```{r}
+# DATA-008: Illustration 1, Frequency of Hash Tag
+# =======================================================================
+df_twitter_loc %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation
+  # -----------------------------------------------------------------
+  unnest_tokens(output = hashtag, input = text, token = "tweets") %>% # obtain hashtages from tweet
+   filter(!hashtag %in% c("#minecraftmanhunt", "#spotifywrapped"), str_detect(hashtag, "^#")) %>%  # filter to hashtages only and no #ballondor
+    count(hashtag, sort = TRUE) %>% # obtain count of hashtag and sort to have highest
+  # -----------------------------------------------------------------
+   # 2. Filtering
+  # -----------------------------------------------------------------
+  head(5) %>% # filter to the top 5 hashtags within the dataset
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(hashtag, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-008: Illustration 2, Word Cloud
+# =======================================================================
+pal <- brewer.pal(8,"Dark2") # create palette for displaying word cloud
+# -----------------------------------------------------------------------
+df_twitter_loc %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation
+  # -----------------------------------------------------------------
+  unnest_tokens(output = hashtag, input = text, token = "tweets") %>% # obtain hashtages from tweet
+   filter(!hashtag %in% c("#minecraftmanhunt", "#spotifywrapped"), str_detect(hashtag, "^#")) %>%  # filter to hashtages only and no #ballondor
+    count(hashtag, sort = TRUE) %>% # obtain count of hashtag and sort to have highest\
+    mutate(hashtag = str_remove(hashtag, '#')) %>% # remove # symbol from all hashtags
+    with(wordcloud(hashtag, n, random.order = FALSE, max.words = 50, colors = pal)) # display word cloud
+```
+
+```{r}
+df_twitter_loc %>%
+    unnest_tokens(input = text, output = word) %>% 
+    anti_join(get_stopwords()) %>% 
+    count(word, sort = TRUE) %>%
+    inner_join(get_sentiments("bing")) %>%
+    filter(!is.na(sentiment)) %>%
+    count(sentiment, sort = TRUE) %>% 
+    mutate(n = n/sum(n)) %>% 
+    ggplot(aes(y= reorder(sentiment, n), x = n))+geom_col()+
+    labs(y='Relative Frequency', x ='')
+```
+
+```{r}
+# DATA-008: Illustration 4, Frequency of Users
+# =======================================================================
+df_twitter_loc %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  count(screen_name, sort = TRUE) %>% # count the number of screen name and sort
+  head(5) %>% # filter to the top 5 users
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(screen_name, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-008: Illustration 5, Frequency of Mentions
+# =======================================================================
+df_twitter_loc %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  unnest_tokens(mentions, text, "tweets", to_lower = FALSE) %>%
+    filter(str_detect(mentions, "^@")) %>%  
+      count(mentions, sort = TRUE) %>%
+      head(10) %>%
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(mentions, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-008: Illustration 6, Frequency of Source
+# =======================================================================
+df_twitter_loc %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  count(source, sort = TRUE) %>%
+   head(5) %>% 
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(source, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-008: Illustration 7, Frequency of Country
+# =======================================================================
+df_twitter_loc %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  filter(!is.na(country)) %>% 
+    count(country, sort = TRUE) %>%
+      head(5) %>%
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(country, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-004: Illustration 8, Frequency of Location
+# =======================================================================
+df_twitter_loc %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  filter(!is.na(location), !location=='') %>% 
+    count(location, sort = TRUE) %>%
+      head(5) %>% 
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(location, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-008: Illustration 9, Frequency of Tweets
+# =======================================================================
+df_twitter_loc %>% # call dataset for manipulation and display
+  # -----------------------------------------------------------------
+   # 1. Data Manipulation & Filtering
+  # -----------------------------------------------------------------
+  unnest_tokens(output = word, input = text, token = "words") %>%
+   anti_join(get_stopwords()) %>% 
+    filter(!word %in% c('https', 't.co', 'ballondor', 'ballon', 'award', 'year', 'ballondor2021')) %>% 
+    count(word, sort = TRUE) %>%
+     head(5) %>%
+  # -----------------------------------------------------------------
+  # 3. Plotting
+  # ----------------------------------------------------------------
+  ggplot(aes(x = n, y = reorder(word, n))) + # start plotting plane with parameters
+   geom_col() +  # create bar chart to be display
+    labs(x = 'Frequency', y = '') # modified axis with plot
+```
+
+```{r}
+# DATA-008: Illustration 10, Frequency of Tweets
+# =======================================================================
+ts_plot(df_twitter_loc, 'hours') +
+  labs(x = NULL, y = NULL,
+       title = "Frequency of tweets",
+       subtitle = paste0(format(min(df_twitter_kw$created_at), "%d %B %Y"), " to ", format(max(df_twitter_kw$created_at),"%d %B %Y")),
+       caption = "Data collected from Twitter's REST API via rtweet") +
+  theme_minimal()
+```
