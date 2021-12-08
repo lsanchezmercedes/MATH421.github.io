@@ -1,0 +1,201 @@
+---
+title: "Assignment 15"
+author: "Luis Sanchez Mercedes"
+date: "12/6/2021"
+output: html_document
+---
+
+```{r}
+# IMPORT-001: Import libraries that will be utilized within analysis
+# =======================================================================
+library(rtweet) 
+library(tidytext)
+library(ggpubr) 
+library(tidyverse) 
+library(knitr)
+library(lubridate)
+library(wordcloud)
+library(RColorBrewer)
+```
+
+
+```{r}
+# CONFIG-001: Functions for calculating Age of a person
+# =======================================================================
+age <- function(x){
+  difference = as.integer(format(Sys.Date(), "%Y")) - x
+  print(paste0('You are ', difference, ' years old'))
+}
+```
+
+```{r}
+# DATA-001: Utilizing Age function with real data
+# =======================================================================
+age(2000) # will print out 20-years old
+```
+
+```{r}
+# CONFIG-002: Functions for print out if number is odd or even
+# =======================================================================
+even_or_odd <- function(x) {
+  if (x%%2==0) {
+    print('Number is even')
+  } else {
+    print('Number is odd')
+  }
+}
+```
+
+```{r}
+# DATA-002: Testing against Even
+# =======================================================================
+even_or_odd(2) # will print out 20-years old
+```
+
+```{r}
+# CONFIG-003: Functions for replacing vector value with mean
+# =======================================================================
+impute_mean <- function(array) {
+  if (any(is.na(array))) {
+    library(tidyr)
+    mean = mean(array, na.rm = TRUE)
+    array <- replace_na(array, mean)
+  } 
+  return(array)
+}
+```
+
+```{r}
+# DATA-003: Call upon covid-19 dataframe and check missing
+# =======================================================================
+df_titanic <- read_csv('https://bryantstats.github.io/math421/titanic.csv', show_col_types = FALSE)
+colSums(is.na(df_titanic))
+```
+```{r}
+# DATA-003: Use function to fix issue with Age
+# =======================================================================
+impute <- impute_mean(df_titanic$Age)
+sum(is.na(impute))
+```
+
+
+```{r}
+# CONFIG-003: Functions for replacing missing with either mean or mode depending of value
+# =======================================================================
+imputer <- function(array) {
+  library(tidyr)
+  if (any(is.na(array))) {
+    if (is.numeric(array)) {
+      mean = mean(array, na.rm = TRUE)
+      array <- replace_na(array, mean)
+      
+    } else {
+      mode <- names(sort(-table(array)))[1]
+      array <- replace_na(array, mode)
+    }
+  } 
+  return(array)
+}
+```
+
+```{r}
+# DATA-003: Fixing multi-imputation error for continuos
+# =======================================================================
+df_titanic$Age <- imputer(df_titanic$Age)
+sum(is.na(df_titanic$Age))
+```
+```{r}
+# DATA-003: Fixing multi-imputation error for categorical
+# =======================================================================
+df_titanic$Cabin <- imputer(df_titanic$Cabin)
+sum(is.na(df_titanic$Cabin))
+```
+
+
+```{r}
+# CONFIG-004: Functions for designing box plot
+# =======================================================================
+box_plot <- function(df,x,y) {
+  library(ggplot2)
+  if (is.numeric(df[[x]])||is.numeric(df[[y]])) {
+    df %>% ggplot(aes(x=.data[[x]],y=.data[[y]])) + geom_boxplot()
+  } else {
+    print('This function cannot visualize your data')
+  }
+}
+```
+
+```{r}
+# DATA-004: Creating box plot for x continuos, y categorical
+# =======================================================================
+box_plot(df_titanic, 'Age', 'Cabin')
+```
+
+
+
+```{r}
+# DATA-005: Creating box plot for x categorical, y continuos
+# ==================================================================
+box_plot(df_titanic, 'Cabin', 'Age')
+```
+
+```{r}
+# CONFIG-005: Functions for plotting all types of field types
+# =======================================================================
+plotter <- function(df,x,y) {
+  library(ggplot2)
+  if (is.numeric(df[[x]])&&is.numeric(df[[y]])) {
+    df %>% ggplot(aes(x=.data[[x]],y=.data[[y]])) + geom_point()
+  } else if (is.numeric(df[[x]])||is.numeric(df[[y]])){
+    df %>% ggplot(aes(x=.data[[x]],y=.data[[y]])) + geom_boxplot()
+  } else {
+    df %>% ggplot(aes(x=.data[[x]],y=.data[[y]])) + geom_count()
+  }
+}
+```
+
+```{r}
+# DATA-006: Creating box plot for x continuos, y continuos
+# ==================================================================
+plotter(df_titanic, "Age", "Fare")
+```
+
+```{r}
+# DATA-007: Creating box plot for x categorical, y continuos
+# ==================================================================
+plotter(df_titanic, "Age", "Cabin")
+```
+
+```{r}
+# DATA-008: Creating box plot for x categorical, y categorical
+# ==================================================================
+plotter(df_titanic, "Sex", "Cabin")
+```
+
+```{r}
+# CONFIG-004: Functions for designing box plot
+# =======================================================================
+word_cloud <- function(text_df, text_col) {
+ text_df %>% # call dataset for manipulation and display
+  unnest_tokens(input = text_col, output = word) %>% 
+  anti_join(get_stopwords()) %>% 
+  count(word, sort = TRUE) %>% 
+  with( # calls unto functioned below
+     wordcloud(word, n, random.order = FALSE, max.words = 50))
+}
+```
+
+```{r}
+# DATA-009: Read twitter data for analysis
+# ==================================================================
+df_twitter_kw <- read_csv('twitter_data_ballondor.csv') # calls upon csv file for usage
+head(df_twitter_kw)
+```
+```{r}
+# DATA-010: Implement word cloud using twitter information
+# ==================================================================
+word_cloud(df_twitter_kw, "text")
+```
+
+
+
