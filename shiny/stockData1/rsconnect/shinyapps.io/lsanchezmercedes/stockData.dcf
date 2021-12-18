@@ -1,0 +1,13 @@
+name: stockData
+title: stockData
+username:
+account: lsanchezmercedes
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5344203
+bundleId: 5386824
+url: https://lsanchezmercedes.shinyapps.io/stockData/
+when: 1639790375.5268
+lastSyncTime: 1639790375.5268
+asMultiple: FALSE
+asStatic: FALSE

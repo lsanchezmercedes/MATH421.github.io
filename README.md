@@ -16,3 +16,13 @@
 - [Click Here to my Assignment 15](Assignment-15.html)
 - [Click Here to Midterm Exam](Midterm_Final.html)
 - [Click Here to Midterm Presentation](Midterm_Presentation.html)
+
+Question 2: https://lsanchezmercedes.shinyapps.io/selectInput/
+Question 3: https://lsanchezmercedes.shinyapps.io/checkboxGroupInput/
+Question 4: https://lsanchezmercedes.shinyapps.io/sliderInput/
+Question 5: https://lsanchezmercedes.shinyapps.io/dateRangeInput/
+Question 6: https://lsanchezmercedes.shinyapps.io/radioButtons/
+Question 7: https://lsanchezmercedes.shinyapps.io/navbarPage/
+Question 8: https://lsanchezmercedes.shinyapps.io/uploadData/
+Question 9: https://lsanchezmercedes.shinyapps.io/uploadData2/
+Question 10 & 11 (Issue Displaying graph): https://lsanchezmercedes.shinyapps.io/stockData/

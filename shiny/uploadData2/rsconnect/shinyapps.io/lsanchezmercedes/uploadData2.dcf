@@ -1,0 +1,13 @@
+name: uploadData2
+title: uploadData2
+username:
+account: lsanchezmercedes
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5320651
+bundleId: 5367999
+url: https://lsanchezmercedes.shinyapps.io/uploadData2/
+when: 1639424525.36468
+lastSyncTime: 1639424525.36468
+asMultiple: FALSE
+asStatic: FALSE
